@@ -4,8 +4,15 @@ bp = Blueprint('routes', __name__)
 
 @bp.route('/augment', methods=['POST'])
 def create():
-    url = request.get_json()
-    response = {'received':url}
+    json = request.get_json()
+    url = json.get("url")
+    question_id = json.get("question_id")
+
+    import downloader
+    downloader.download(url, question_id)
+
+    response = {'dir':'some dir'}
+
     return jsonify(response)
 
 @bp.route('/augment', methods=['DELETE'])
