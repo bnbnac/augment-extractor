@@ -15,3 +15,6 @@ build/
 
 downloads/
 storage/
+example/
+easiest.py
+test.py
