@@ -1,31 +1,22 @@
 from flask import request, jsonify
-from downloader.downloader import download
-# from analyzer.analyzer import analyze
+from downloader import downloader
+from analyzer.analyzer import VideoAnalyzer
+from cutter import cutter
 
 from routes import bp
 
 
 @bp.route('/augment', methods=['POST'])
 def create():
-    json = request.get_json()
-    url = json.get('url')
-    question_id = json.get('question_id')
+    url = request.args.get('url')
+    question_id = "okk"
 
-    video_path, ext = download(url, question_id)
+    video_path_low, ext_low = downloader.download_low_qual(url, question_id)
+    video_path_high, ext_high = downloader.download_high_qual(url, question_id)
 
-)
-
-    # spots = analyze(video_path, ext)
-    # generate(spots)
-
-    response = {'path': 'question_path'}
-
-    # downloader failed res
-    # analyzer failed res
-    # generator failed res
-
-    # success
-    return jsonify(response)
+    analyzer = VideoAnalyzer()
+    time_intervals = analyzer.analyze_video(video_path_low, ext_low)
+    cutter.cut_video_segments(time_intervals, video_path_high, ext_high)
 
 
 @bp.route('/augment', methods=['DELETE'])
