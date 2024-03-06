@@ -1,3 +1,5 @@
+어떻게든 돌아가게만 만든 서버입니다
+
 ## dependencies
 
 [tesseract](https://github.com/tesseract-ocr/tesseract)
@@ -16,3 +18,19 @@ analyzer.\_generate_intervals은 컷편집 여부를 인수로 받아야함. 조
 왜 Analyzer는 class로 했더라?
 
 webm, mp4 인풋아웃풋과 처리속도?
+
+analysis 요청이 몰려들어올 때 동작?
+어차피 1080p가 있을텐데 best로 할필요가 있을까
+https://www.youtube.com/watch?v=VpIDjGs5_bI
+이거 2번째증강 안잡혔음 acc 더 올려야....
+
+ffmpeg가 실패했을때의 return
+현재 analysis 시간대
+
+{postid} dir가 없어도 cut이 잘 생성되는지 - os.확인작업?
+download.py와 existence
+
+헉. 인터발이 안잡혀서 컷이 없을때 8080:/extractor/complete - 500
+컷이 하나일때 알고리즘 수정
+
+todo: analyzer나 cutter에서 뭔가 실패하면 최후순위 큐를 만들어서 거기에 넣자. 이 큐에 있는건 original queue가 비었을때만 처리하도록

@@ -19,7 +19,7 @@ def download_low_qual(url, question_id):
 def download_high_qual(url, question_id):
     ydl_opts = {
         'outtmpl': f'downloads/high/{question_id}.%(ext)s',
-        'format': 'bestvideo[height<=1080]+bestaudio'
+        'format': 'worstvideo[height>=1080]+bestaudio'
     }
 
     with YoutubeDL(ydl_opts) as ydl:
