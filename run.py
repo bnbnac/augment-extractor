@@ -1,6 +1,13 @@
-from app import create_app
+from src.app import create_app
+import threading
+from src.worker.video_worker import process_video_task
+
 
 app = create_app()
 
+
+processing_thread = threading.Thread(target=process_video_task)
+processing_thread.start()
+
 if __name__ == '__main__':
-    app.run(port=5050, debug=True)
+    app.run(port=5050, debug=True, use_reloader=False)

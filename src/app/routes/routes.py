@@ -1,22 +1,23 @@
-from flask import request, jsonify
-from downloader import downloader
-from analyzer.analyzer import VideoAnalyzer
-from cutter import cutter
+from flask import request, jsonify, Blueprint
+from src.worker.shared import process_queue
+from src.worker.video_worker import find_position
 
-from routes import bp
+bp = Blueprint('api', __name__, url_prefix='/')
 
 
-@bp.route('/augment', methods=['POST'])
+@bp.route('/analysis', methods=['POST'])
 def create():
-    url = request.args.get('url')
-    question_id = "okk"
+    try:
+        data = request.json
+        video_id = data.get('videoId')
+        post_id = data.get('postId')
+        init_queue_size = process_queue.qsize()
 
-    video_path_low, ext_low = downloader.download_low_qual(url, question_id)
-    video_path_high, ext_high = downloader.download_high_qual(url, question_id)
+        process_queue.put([video_id, post_id, init_queue_size])
+        return '', 200
 
-    analyzer = VideoAnalyzer()
-    time_intervals = analyzer.analyze_video(video_path_low, ext_low)
-    cutter.cut_video_segments(time_intervals, video_path_high, ext_high)
+    except:
+        return jsonify({"error": "Invalid JSON data"}), 400
 
 
 @bp.route('/augment', methods=['DELETE'])
