@@ -20,11 +20,22 @@ def create():
         return jsonify({"error": "Invalid JSON data"}), 400
 
 
-@bp.route('/augment', methods=['DELETE'])
-def delete():
-    json = request.get_json()
-    question_id = json.get('question_id')
+@bp.route('/position', methods=['GET'])
+def get_position():
+    try:
+        post_id = request.args.get('id')
+        initial, current = find_position(post_id)
 
-    # ok = deleter.delete(question_id)
-    response = {'ok': 'ok'}
-    return jsonify(response)
+        return jsonify({"current": current, "initial": initial}), 200
+
+    except:
+        return jsonify({"error": "invalid post ID"}), 400
+
+# @bp.route('/analysis', methods=['DELETE'])
+# def delete():
+#     json = request.get_json()
+#     question_id = json.get('question_id')
+
+#     # ok = deleter.delete(question_id)
+#     response = {'ok': 'ok'}
+#     return jsonify(response)

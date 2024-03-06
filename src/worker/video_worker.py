@@ -15,6 +15,20 @@ def process_video_task():
             process_video(video_id, post_id)
 
 
+# 나중에 Work 객체를 만들어서 이것저것 갖고있게?
+def find_position(post_id):
+    initial = 0
+    current = 0
+
+    for i, el in enumerate(process_queue.queue):
+        if str(el[1]) == str(post_id):
+            initial = el[2] + 1
+            current = i + 1
+            break
+
+    return initial, current
+
+
 def process_video(video_id, post_id):
     url = f'https://www.youtube.com/watch?v={video_id}'
 
