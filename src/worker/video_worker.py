@@ -45,3 +45,28 @@ def process_video(video_id, post_id):
 
     except requests.exceptions.RequestException as e:
         print(f"Error sending request to external server: {e}")
+
+
+def query_rsync(post_id, start_time_without_colons, end_time_without_colons, result):
+    file_name = f"{start_time_without_colons}_{end_time_without_colons}.mp4"
+    input_path = f"/Users/hongseongjin/code/augment-extractor/downloads/{post_id}/{file_name}"
+    user = "bnbnac"
+    server = "192.168.1.7"
+    remote_directory = f"/mnt/p31/storage/{post_id}"
+    destination_path = f"{user}@{server}:{remote_directory}/{file_name}"
+
+    try:
+        mkdir_cmd = ["ssh", "-p", "22022",
+                     f"{user}@{server}", "mkdir", "-p", remote_directory]
+        subprocess.run(mkdir_cmd)
+    except subprocess.CalledProcessError as e:
+        print(f"Error creating directory: {e}")
+
+    try:
+        rsync_cmd = ["rsync", "-avz", "-e", "ssh -p 22022",
+                     input_path, destination_path]
+        subprocess.run(rsync_cmd)
+        result.append(start_time_without_colons)
+        result.append(end_time_without_colons)
+    except subprocess.CalledProcessError as e:
+        print(f"Error during rsync: {e}")
