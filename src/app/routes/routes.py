@@ -1,6 +1,7 @@
 from flask import request, jsonify, Blueprint
 from src.worker.shared import process_queue
 from src.worker.video_worker import find_position
+from src.worker.video_worker import delete_by_post_id
 
 bp = Blueprint('api', __name__, url_prefix='/')
 
@@ -31,11 +32,14 @@ def get_position():
     except:
         return jsonify({"error": "invalid post ID"}), 400
 
-# @bp.route('/analysis', methods=['DELETE'])
-# def delete():
-#     json = request.get_json()
-#     question_id = json.get('question_id')
 
-#     # ok = deleter.delete(question_id)
-#     response = {'ok': 'ok'}
-#     return jsonify(response)
+@bp.route('/delete', methods=['DELETE'])
+def delete():
+    try:
+        post_id = request.args.get('id')
+        reply = delete_by_post_id(post_id)
+
+        return jsonify({"extractorReply": reply}), 200
+
+    except:
+        return jsonify({"error": "invalid post ID"}), 400

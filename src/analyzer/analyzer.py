@@ -1,6 +1,12 @@
 import cv2
 import pytesseract
 from typing import List
+from src.worker.shared import current_processing_info
+from src.util.util import delete_local_directory
+
+
+class RequestedQuitException(Exception):
+    pass
 
 
 class VideoAnalyzer:
@@ -18,8 +24,11 @@ class VideoAnalyzer:
         self.threshold_val = threshold_val
         self.accuracy = accuracy
 
-    def analyze_video(self, video_path: str, ext: str) -> List[str]:
+    def get_time_interval_from_video(self, video_path: str, ext: str) -> List[str]:
         cap = cv2.VideoCapture(video_path + '.' + ext)
+
+        current_processing_info.state = 'analyzing'
+        current_processing_info.total_frame = cap.get(cv2.CAP_PROP_FRAME_COUNT)
 
         frame_rate = cap.get(cv2.CAP_PROP_FPS)
         if frame_rate < self.accuracy:
@@ -36,6 +45,13 @@ class VideoAnalyzer:
                 break
 
             if frame_counter % skip_frame == 0:
+                current_processing_info.cur_frame = frame_counter
+                if current_processing_info.quit_flag == 1:
+                    directory = f'/Users/hongseongjin/code/augment-extractor/downloads'
+                    post_id = current_processing_info.post_id
+                    delete_local_directory(directory, post_id)
+                    raise RequestedQuitException
+
                 if self._is_aug_selection(frame):
                     results.append(frame_counter)
 
