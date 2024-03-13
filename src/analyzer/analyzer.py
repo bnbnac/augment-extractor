@@ -75,7 +75,7 @@ class VideoAnalyzer:
     def _generate_intervals(self, result_frames, skip_frame, accuracy):
         ret = []
         depth = 0
-        select_time_limit = 20  # 컷편집 한 영상. 풀영상은 이걸 더 높게. 영상업로드시 컷편집여부를 선택하도록 유도함
+        aug_select_time_limit = 20  # 컷편집 한 영상. 풀영상은 이걸 더 높게. 영상업로드시 컷편집여부를 선택하도록 유도함
         padding = 3 * skip_frame * accuracy
 
         aug_start = result_frames[0]
@@ -86,17 +86,18 @@ class VideoAnalyzer:
             depth += 1
             last, cur = cur, f
 
-            # the time between `last` and `cur` is larger than select_time_limit && number of this bunch of frames are larger than accuracy
-            if select_time_limit * (skip_frame * accuracy) < cur - last:
+            # the time between `last` and `cur` is larger than aug_select_time_limit && number of this bunch of frames are larger than accuracy
+            if aug_select_time_limit * (skip_frame * accuracy) < cur - last:
                 if depth >= accuracy:
-                    print(select_time_limit * (skip_frame * accuracy))
-                    ret.extend([aug_start - padding, last + padding])
-                    print([aug_start, last])
+                    ret.extend([aug_start - padding * 2, last + padding])
                 depth = 0
                 aug_start = cur
 
-        print("reslut_frame" + str(result_frames))
-        print("intervals" + str(ret))
+        if (len(ret) == 0 and len(result_frames) > 0):
+            ret.append(result_frames[0] - padding * 2)
+            ret.append(result_frames[-1] + padding)
+        print("******caught frame****** " + str(result_frames))
+        print("******intervals****** " + str(ret))
         return ret
 
     def _seconds_to_hh_mm_ss(self, seconds):
@@ -118,18 +119,3 @@ class VideoAnalyzer:
             timestamps.append(self._seconds_to_hh_mm_ss(end_time))
 
         return timestamps
-
-
-# analyzer = VideoAnalyzer()
-# interv = analyzer._generate_intervals([705, 720, 735, 765, 795, 810, 825, 840, 870, 885, 900, 915,
-#                                        930, 945, 6795, 6810, 6825, 6840, 6855, 6870, 6975, 6990, 7020, 7035, 10965, 10980, 11700, 16725], 15, 2.0)
-# ts = analyzer._frame_intervals_to_timestamps(interv, 30)
-# print(interv)
-# print(ts)
-# interval = analyzer._generate_intervals(
-#     [720, 810, 840, 870, 900, 930, 6810, 6840, 6870, 6990, 7020, 10980, 11700])
-# totime = analyzer._frame_intervals_to_timestamps(interval, 30)
-# print(interval)
-# print(totime)
-# result_frames = analyzer.analyze_video(video_path='../../downloads/low/abcdef', ext='mp4')
-# generator(result_frames)

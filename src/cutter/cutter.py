@@ -15,19 +15,19 @@ def cut_video_segments(time_intervals: list[str], input_video_path, ext, post_id
         end_time_without_colons = end_time.replace(":", "")
 
         output_path = f"/Users/hongseongjin/code/augment-extractor/downloads/{post_id}/{start_time_without_colons}_{end_time_without_colons}.mp4"
+        cmd = [
+            "ffmpeg",
+            "-i", input_path,
+            "-ss", start_time,
+            "-to", end_time,
+            "-c:v", "libx264",
+            "-c:a", "aac",
+            "-strict", "experimental",
+            output_path
+        ]
 
         try:
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
-            cmd = [
-                "ffmpeg",
-                "-i", input_path,
-                "-ss", start_time,
-                "-to", end_time,
-                "-c:v", "libx264",
-                "-c:a", "aac",
-                "-strict", "experimental",
-                output_path
-            ]
             subprocess.run(cmd)
             complete.append(start_time_without_colons)
             complete.append(end_time_without_colons)

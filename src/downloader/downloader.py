@@ -1,9 +1,14 @@
 from yt_dlp import YoutubeDL
+import os
 
 
-def download_low_qual(url, question_id):
+def download_low_qual(url, post_id):
+    dir = f'/Users/hongseongjin/code/augment-extractor/downloads/{post_id}'
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+
     ydl_opts = {
-        'outtmpl': f'downloads/low/{question_id}.%(ext)s',
+        'outtmpl': f'{dir}/low.%(ext)s',
         'format': 'worstvideo[height>=480]'
     }
 
@@ -12,13 +17,17 @@ def download_low_qual(url, question_id):
         video_ext = info_dict['ext']
         ydl.download([url])
 
-    video_path = f'downloads/low/{question_id}'
+    video_path = f'{dir}/low'
     return video_path, video_ext
 
 
-def download_high_qual(url, question_id):
+def download_high_qual(url, post_id):
+    dir = f'/Users/hongseongjin/code/augment-extractor/downloads/{post_id}'
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+
     ydl_opts = {
-        'outtmpl': f'downloads/high/{question_id}.%(ext)s',
+        'outtmpl': f'{dir}/high.%(ext)s',
         'format': 'worstvideo[height>=1080]+bestaudio'
     }
 
@@ -27,7 +36,7 @@ def download_high_qual(url, question_id):
         video_ext = info_dict['ext']
         ydl.download([url])
 
-    video_path = f'downloads/high/{question_id}'
+    video_path = f'{dir}/high'
     return video_path, video_ext
 
 

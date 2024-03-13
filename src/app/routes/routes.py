@@ -10,7 +10,7 @@ def create():
     try:
         data = request.json
         video_id = data.get('videoId')
-        post_id = data.get('postId')
+        post_id = str(data.get('postId'))
         init_queue_size = process_queue.qsize()
 
         process_queue.put([video_id, post_id, init_queue_size])
