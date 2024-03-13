@@ -34,3 +34,12 @@ download.py와 existence
 컷이 하나일때 알고리즘 수정
 
 todo: analyzer나 cutter에서 뭔가 실패하면 최후순위 큐를 만들어서 거기에 넣자. 이 큐에 있는건 original queue가 비었을때만 처리하도록
+exception 발생시 springboot로 뭘 보낼지
+work 객체 도입?
+
+비디오가 너무 크면 {spring-server}/extractor/complete 에다가 안한다고 보내야함
+보내는 형식 process_video() 하단 참고
+
+시점을 로깅해야겠는데 timestamp
+
+리팩토링 언제함 ㅋㅋㅋ
