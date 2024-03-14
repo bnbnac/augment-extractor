@@ -1,0 +1,2 @@
+class RequestedQuitException(Exception):
+    pass

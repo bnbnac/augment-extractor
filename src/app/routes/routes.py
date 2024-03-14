@@ -1,6 +1,6 @@
 from flask import request, jsonify, Blueprint
 from src.worker.shared import process_queue
-from src.worker.video_worker import find_position, delete_by_post_id, query_remove_remote_question
+from src.worker.video_worker import delete_by_post_id, query_remove_remote_question
 
 bp = Blueprint('api', __name__, url_prefix='/')
 
@@ -25,7 +25,7 @@ def create():
 def get_position():
     try:
         post_id = request.args.get('id')
-        initial, current = find_position(post_id)
+        initial, current = process_queue.find_position(post_id)
 
         return jsonify({"current": current, "initial": initial}), 200
 
@@ -34,10 +34,10 @@ def get_position():
 
 
 @bp.route('/posts', methods=['DELETE'])
-def delete_by_post_id():
+def delete_post():
     try:
         member_id = request.args.get('memberId')
-        post_id = request.args.get('memberId')
+        post_id = request.args.get('postId')
         reply = delete_by_post_id(member_id, post_id)
 
         return jsonify({"extractorReply": reply}), 200
@@ -47,7 +47,7 @@ def delete_by_post_id():
 
 
 @bp.route('/questions', methods=['DELETE'])
-def delete_by_file_name():
+def delete_question():
     try:
         member_id = request.args.get('memberId')
         post_id = request.args.get('postId')

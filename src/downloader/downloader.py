@@ -1,44 +1,66 @@
 from yt_dlp import YoutubeDL
 import os
+from src.exception.exception import RequestedQuitException
+from src.deleter.deleter import delete_local_directory
+from src.worker.shared import current_processing_info, LOCAL_DIR
 
 
-def download_low_qual(url, member_id, post_id):
-    dir = f'/Users/hongseongjin/code/augment-extractor/downloads/{member_id}/{post_id}'
-    if not os.path.exists(dir):
-        os.makedirs(dir)
+class Downloader:
+    def __init__(self):
+        self.youtube_prefix = 'https://www.youtube.com/watch?v='
 
-    ydl_opts = {
-        'outtmpl': f'{dir}/low.%(ext)s',
-        'format': 'worstvideo[height>=480]'
-    }
+    def download(self, video_id, member_id, post_id):
+        current_processing_info.state = 'video downloading'
 
-    with YoutubeDL(ydl_opts) as ydl:
-        info_dict = ydl.extract_info(url, download=False)
-        video_ext = info_dict['ext']
-        ydl.download([url])
+        low_ext = self.download_low_qual(video_id, member_id, post_id)
+        if current_processing_info.quit_flag == 1:
+            delete_local_directory(current_processing_info.post_id)
+            raise RequestedQuitException
 
-    video_path = f'{dir}/low'
-    return video_path, video_ext
+        high_xet = self.download_high_qual(video_id, member_id, post_id)
+        if current_processing_info.quit_flag == 1:
+            delete_local_directory(current_processing_info.post_id)
+            raise RequestedQuitException
 
+        return low_ext, high_xet
 
-def download_high_qual(url, member_id, post_id):
-    dir = f'/Users/hongseongjin/code/augment-extractor/downloads/{member_id}/{post_id}'
-    if not os.path.exists(dir):
-        os.makedirs(dir)
+    def download_low_qual(self, video_id, member_id, post_id):
+        url = f'{self.youtube_prefix}{video_id}'
 
-    ydl_opts = {
-        'outtmpl': f'{dir}/high.%(ext)s',
-        'format': 'worstvideo[height>=1080]+bestaudio'
-    }
+        download_dir = f'{LOCAL_DIR}/downloads/{member_id}/{post_id}'
+        if not os.path.exists(download_dir):
+            os.makedirs(download_dir)
 
-    with YoutubeDL(ydl_opts) as ydl:
-        info_dict = ydl.extract_info(url, download=False)
-        video_ext = info_dict['ext']
-        ydl.download([url])
+        ydl_opts = {
+            'outtmpl': f'{download_dir}/low.%(ext)s',
+            'format': 'worstvideo[height>=480]'
+        }
+        video_ext = self.ydl_download(url, ydl_opts)
 
-    video_path = f'{dir}/high'
-    return video_path, video_ext
+        return video_ext
 
+    def download_high_qual(self, video_id, member_id, post_id):
+        url = f'{self.youtube_prefix}{video_id}'
+
+        download_dir = f'{LOCAL_DIR}/downloads/{member_id}/{post_id}'
+        if not os.path.exists(download_dir):
+            os.makedirs(download_dir)
+
+        ydl_opts = {
+            'outtmpl': f'{download_dir}/high.%(ext)s',
+            'format': 'worstvideo[height>=1080]+bestaudio'
+        }
+        video_ext = self.ydl_download(url, ydl_opts)
+
+        return video_ext
+
+    def ydl_download(self, url, ydl_opts):
+        with YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(url, download=False)
+            video_ext = info_dict['ext']
+            ydl.download([url])
+
+        return video_ext
 
 # # dot split -1
 # print(download_low_qual("https://www.youtube.com/watch?v=3lm-v1zP43c", "hihi4"))
