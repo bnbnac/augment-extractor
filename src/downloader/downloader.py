@@ -2,8 +2,8 @@ from yt_dlp import YoutubeDL
 import os
 
 
-def download_low_qual(url, post_id):
-    dir = f'/Users/hongseongjin/code/augment-extractor/downloads/{post_id}'
+def download_low_qual(url, member_id, post_id):
+    dir = f'/Users/hongseongjin/code/augment-extractor/downloads/{member_id}/{post_id}'
     if not os.path.exists(dir):
         os.makedirs(dir)
 
@@ -21,8 +21,8 @@ def download_low_qual(url, post_id):
     return video_path, video_ext
 
 
-def download_high_qual(url, post_id):
-    dir = f'/Users/hongseongjin/code/augment-extractor/downloads/{post_id}'
+def download_high_qual(url, member_id, post_id):
+    dir = f'/Users/hongseongjin/code/augment-extractor/downloads/{member_id}/{post_id}'
     if not os.path.exists(dir):
         os.makedirs(dir)
 

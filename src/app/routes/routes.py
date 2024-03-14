@@ -1,7 +1,6 @@
 from flask import request, jsonify, Blueprint
 from src.worker.shared import process_queue
-from src.worker.video_worker import find_position
-from src.worker.video_worker import delete_by_post_id
+from src.worker.video_worker import find_position, delete_by_post_id, query_remove_remote_question
 
 bp = Blueprint('api', __name__, url_prefix='/')
 
@@ -11,10 +10,11 @@ def create():
     try:
         data = request.json
         video_id = data.get('videoId')
+        member_id = data.get('memberId')
         post_id = str(data.get('postId'))
         init_queue_size = process_queue.qsize()
 
-        process_queue.put([video_id, post_id, init_queue_size])
+        process_queue.put([video_id, member_id, post_id, init_queue_size])
         return '', 200
 
     except:
@@ -33,13 +33,28 @@ def get_position():
         return jsonify({"error": "invalid post ID"}), 400
 
 
-@bp.route('/delete', methods=['DELETE'])
-def delete():
+@bp.route('/posts', methods=['DELETE'])
+def delete_by_post_id():
     try:
-        post_id = request.args.get('id')
-        reply = delete_by_post_id(post_id)
+        member_id = request.args.get('memberId')
+        post_id = request.args.get('memberId')
+        reply = delete_by_post_id(member_id, post_id)
 
         return jsonify({"extractorReply": reply}), 200
 
     except:
-        return jsonify({"error": "invalid post ID"}), 400
+        return jsonify({"error": "unexpected error"}), 400
+
+
+@bp.route('/questions', methods=['DELETE'])
+def delete_by_file_name():
+    try:
+        member_id = request.args.get('memberId')
+        post_id = request.args.get('postId')
+        filename = request.args.get('filename')
+        reply = query_remove_remote_question(member_id, post_id, filename)
+
+        return jsonify({"extractorReply": reply}), 200
+
+    except:
+        return jsonify({"error": "unexpected error"}), 400

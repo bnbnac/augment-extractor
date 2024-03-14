@@ -1,5 +1,5 @@
 import time
-from src.worker.shared import process_queue, current_processing_info, Cur_Process
+from src.worker.shared import process_queue, current_processing_info
 from src.downloader import downloader
 from src.analyzer.analyzer import VideoAnalyzer
 from src.cutter import cutter
@@ -14,11 +14,11 @@ def process_video_task():
     while True:
         time.sleep(5)
         if not (process_queue.empty()):
-            video_id, post_id, _ = process_queue.get()
+            video_id, member_id, post_id, _ = process_queue.get()
 
             current_processing_info.post_id = post_id
 
-            process_video(video_id, post_id)
+            process_video(video_id, member_id, post_id)
             current_processing_info.done()
 
 
@@ -27,8 +27,8 @@ def find_position(post_id):
     current = 0
 
     for i, el in enumerate(process_queue.queue):
-        if str(el[1]) == str(post_id):
-            initial = el[2] + 1
+        if str(el[2]) == str(post_id):
+            initial = el[3] + 1
             current = i + 1
             break
 
@@ -36,21 +36,23 @@ def find_position(post_id):
 
 
 # 이 함수는 크게 [다운로드, 분석, 컷, 작업물전송, 작업물삭제, 응답] 으로 나뉨
-def process_video(video_id, post_id):
+def process_video(video_id, member_id, post_id):
     # download
     current_processing_info.state = 'video downloading'
     url = f'https://www.youtube.com/watch?v={video_id}'
 
-    video_path_low, ext_low = downloader.download_low_qual(url, post_id)
+    video_path_low, ext_low = downloader.download_low_qual(
+        url, member_id, post_id)
     if current_processing_info.quit_flag == 1:
         directory = f'/Users/hongseongjin/code/augment-extractor/downloads'
-        delete_local_directory(directory, post_id)
+        delete_local_directory(directory, member_id, post_id)
         return
 
-    video_path_high, ext_high = downloader.download_high_qual(url, post_id)
+    video_path_high, ext_high = downloader.download_high_qual(
+        url, member_id, post_id)
     if current_processing_info.quit_flag == 1:
         directory = f'/Users/hongseongjin/code/augment-extractor/downloads'
-        delete_local_directory(directory, post_id)
+        delete_local_directory(directory, member_id, post_id)
         return
 
     # alalysis
@@ -70,23 +72,23 @@ def process_video(video_id, post_id):
     current_processing_info.state = 'cutting'
     if current_processing_info.quit_flag == 1:
         directory = f'/Users/hongseongjin/code/augment-extractor/downloads'
-        delete_local_directory(directory, post_id)
+        delete_local_directory(directory, member_id, post_id)
         return
     complete = cutter.cut_video_segments(
-        time_intervals, video_path_high, ext_high, post_id)
+        time_intervals, video_path_high, ext_high, member_id, post_id)
 
     # rsync
     current_processing_info.state = 'sending the result data'
     if current_processing_info.quit_flag == 1:
         directory = f'/Users/hongseongjin/code/augment-extractor/downloads'
-        delete_local_directory(directory, post_id)
+        delete_local_directory(directory, member_id, post_id)
         return
 
     result = []
     for i in range(0, len(complete), 2):
         start_time_without_colons = complete[i]
         end_time_without_colons = complete[i + 1]
-        query_rsync(post_id, start_time_without_colons,
+        query_rsync(member_id, post_id, start_time_without_colons,
                     end_time_without_colons, result)
 
     # delete dir
@@ -97,10 +99,10 @@ def process_video(video_id, post_id):
         # 이거보다 아래에서 걸렸다면? 이거보다 아래에서 걸렸다면? 이거보다 아래에서 걸렸다면? 이거보다 아래에서 걸렸다면?
         # 나중에 처리하자꾸나
         directory = f'/Users/hongseongjin/code/augment-extractor/downloads'
-        delete_local_directory(directory, post_id)
+        delete_local_directory(directory, member_id, post_id)
         return
     directory = f'/Users/hongseongjin/code/augment-extractor/downloads'
-    delete_local_directory(directory, post_id)
+    delete_local_directory(directory, member_id, post_id)
 
     # response
     external_server_url = f'http://localhost:8080/extractor/complete'
@@ -116,12 +118,12 @@ def process_video(video_id, post_id):
         print(f"Error sending request to external server: {e}")
 
 
-def query_rsync(post_id, start_time_without_colons, end_time_without_colons, result):
+def query_rsync(member_id, post_id, start_time_without_colons, end_time_without_colons, result):
     file_name = f"{start_time_without_colons}_{end_time_without_colons}.mp4"
-    input_path = f"/Users/hongseongjin/code/augment-extractor/downloads/{post_id}/{file_name}"
+    input_path = f"/Users/hongseongjin/code/augment-extractor/downloads/{member_id}/{post_id}/{file_name}"
     user = "bnbnac"
     server = "192.168.1.7"
-    remote_directory = f"/mnt/p31/storage/{post_id}"
+    remote_directory = f"/mnt/p31/storage/{member_id}/{post_id}"
     destination_path = f"{user}@{server}:{remote_directory}/{file_name}"
 
     try:
@@ -141,7 +143,7 @@ def query_rsync(post_id, start_time_without_colons, end_time_without_colons, res
         print(f"Error during rsync: {e}")
 
 
-def delete_by_post_id(post_id):
+def delete_by_post_id(member_id, post_id):
     if (current_processing_info.post_id == post_id):  # 클래스 안으로 넣어야
         current_processing_info.quit_flag = 1
         return 'QUIT current job'
@@ -152,14 +154,14 @@ def delete_by_post_id(post_id):
         remove_nth_element(process_queue, position - 1)
         return 'job in the queue REMOVED'
 
-    query_remove_remote_directory(post_id)
+    query_remove_remote_directory(member_id, post_id)
     return 'the video on the storage REMOVED'
 
 
-def query_remove_remote_directory(post_id):
+def query_remove_remote_directory(member_id, post_id):
     user = "bnbnac"
     server = "192.168.1.7"
-    remote_directory = f"/mnt/p31/storage/{post_id}"
+    remote_directory = f"/mnt/p31/storage/{member_id}/{post_id}"
 
     try:
         ssh_cmd = ["ssh", "-p", "22022",
@@ -184,3 +186,21 @@ def remove_nth_element(queue, n):
 
     while not temp_queue.empty():
         queue.put(temp_queue.get())
+
+
+def query_remove_remote_question(member_id, post_id, filename):
+    user = "bnbnac"
+    server = "192.168.1.7"
+    remote_question = f"/mnt/p31/storage/{member_id}/{post_id}/{filename}"
+
+    try:
+        ssh_cmd = ["ssh", "-p", "22022",
+                   f"{user}@{server}", "rm", remote_question]
+
+        subprocess.run(ssh_cmd, check=True)
+        print('the video on the storage REMOVED')
+        return 'the video on the storage REMOVED'
+
+    except subprocess.CalledProcessError as e:
+        print('Error removing remote directory: {e}')
+        return 'unexpected error'
