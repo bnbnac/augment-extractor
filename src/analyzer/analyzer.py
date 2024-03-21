@@ -1,3 +1,4 @@
+import sys
 import cv2
 import pytesseract
 from typing import List
@@ -7,7 +8,7 @@ from src.exception.exception import RequestedQuitException
 
 
 class VideoAnalyzer:
-    def __init__(self, tesseract_cmd: str = '/opt/homebrew/Cellar/tesseract/5.3.2_1/bin/tesseract',
+    def __init__(self, tesseract_cmd: str = '/usr/bin/tesseract',
                  custom_config: str = r'--psm 6',
                  relative_x: float = 0.33, relative_y: float = 0.1,
                  relative_w: float = 0.33, relative_h: float = 0.3,
@@ -81,6 +82,7 @@ class VideoAnalyzer:
 
     def _generate_intervals(self, result_frames, skip_frame):
         ret = []
+        result_frames.append(sys.maxsize) # 마지막 구간을 위한 dummy
         depth = 0
         aug_select_time_limit = 20  # 컷편집 한 영상. 풀영상은 이걸 더 높게. 영상업로드시 컷편집여부를 선택하도록 유도함
         padding = 3 * skip_frame * self.accuracy
@@ -99,10 +101,6 @@ class VideoAnalyzer:
                     ret.extend([aug_start - padding * 2, last + padding])
                 depth = 0
                 aug_start = cur
-
-        if (len(ret) == 0 and len(result_frames) > 0):
-            ret.append(result_frames[0] - padding * 2)
-            ret.append(result_frames[-1] + padding)
         print("******caught frame****** " + str(result_frames))
         print("******intervals****** " + str(ret))
         return ret

@@ -10,4 +10,4 @@ processing_thread = threading.Thread(target=process_video_task)
 processing_thread.start()
 
 if __name__ == '__main__':
-    app.run(port=5050, debug=True, use_reloader=False)
+    app.run(host='192.168.1.15', port=5050, debug=True, use_reloader=False)

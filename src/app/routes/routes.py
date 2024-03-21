@@ -1,5 +1,5 @@
 from flask import request, jsonify, Blueprint
-from src.worker.shared import process_queue
+from src.worker.shared import process_queue, current_processing_info
 from src.worker.video_worker import delete_by_post_id, query_remove_remote_question
 
 bp = Blueprint('api', __name__, url_prefix='/')
@@ -25,9 +25,20 @@ def create():
 def get_position():
     try:
         post_id = request.args.get('id')
-        initial, current = process_queue.find_position(post_id)
+        initial_position, cur_position = process_queue.find_position(post_id)
+        cur_post_id = current_processing_info.post_id
+        state = current_processing_info.state
+        cur_frame = current_processing_info.cur_frame
+        total_frame = current_processing_info.total_frame
 
-        return jsonify({"current": current, "initial": initial}), 200
+        return jsonify({
+            "curPosition": cur_position,
+            "initialPosition": initial_position,
+            "curPostId": cur_post_id
+            "curFrame": cur_frame,
+            "totalFrame": total_frame,
+            "state": state
+            }), 200
 
     except:
         return jsonify({"error": "invalid post ID"}), 400
