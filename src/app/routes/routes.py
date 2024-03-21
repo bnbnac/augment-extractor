@@ -34,7 +34,7 @@ def get_position():
         return jsonify({
             "curPosition": cur_position,
             "initialPosition": initial_position,
-            "curPostId": cur_post_id
+            "curPostId": cur_post_id,
             "curFrame": cur_frame,
             "totalFrame": total_frame,
             "state": state
