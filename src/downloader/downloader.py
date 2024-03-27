@@ -33,7 +33,7 @@ class Downloader:
 
         ydl_opts = {
             'outtmpl': f'{download_dir}/low.%(ext)s',
-            'format': 'worstvideo[height>=480][vcodec!=av01]'
+            'format': 'worstvideo[height>=480][vcodec!*=av01]'
         }
         video_ext = self.ydl_download(url, ydl_opts)
 
@@ -48,7 +48,7 @@ class Downloader:
 
         ydl_opts = {
             'outtmpl': f'{download_dir}/high.%(ext)s',
-            'format': 'worstvideo[height>=1080][vcodec!=av01]+bestaudio'
+            'format': 'worstvideo[height>=1080][vcodec!*=av01]+bestaudio'
         }
         video_ext = self.ydl_download(url, ydl_opts)
 
