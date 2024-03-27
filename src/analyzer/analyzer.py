@@ -54,8 +54,14 @@ class VideoAnalyzer:
         cap.release()
         cv2.destroyAllWindows()
 
+        print("***************CAUGHT FRAMES******************", flush=True)
+        print(results, flush=True)
+
         frame_intervals = self._generate_intervals(
-            results, skip_frame)
+        results, skip_frame)
+
+        print("**************RETURN*********************", flush=True)
+        print(frame_intervals, flush=True)
 
         return self._frame_intervals_to_time_intervals(frame_intervals, frame_rate)
 
@@ -101,8 +107,6 @@ class VideoAnalyzer:
                     ret.extend([aug_start - padding * 2, last + padding])
                 depth = 0
                 aug_start = cur
-        print("******caught frame****** " + str(result_frames))
-        print("******intervals****** " + str(ret))
         return ret
 
     def _seconds_to_hh_mm_ss(self, seconds):

@@ -73,4 +73,5 @@ logging timestamp
 question을 만드릭 전 중간에 실패해도 finally로 downloads의 자료를 지워야함
 get position current가 0이면 curprocess 관련 데이터를 주자. 애초에 curprocess로 끌어갈때 initial_idx도 가져가야한다. workerqueue에서 사라져버리면getposition시 initial0,cur0이 나오기 때문
 tesseract가 오래걸리는건지 opencv가 오래걸리는건지 측정해보자 tesseract는 thread를 더 쓸수있는거같고, opencv는 cuda를 쓸수있는거같음
+tesseract용 해상도 metadata를 넣어야 한다?
 
