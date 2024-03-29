@@ -1,9 +1,7 @@
 
-# Augment-Extractor**([Github](https://github.com/bnbnac/augment-extractor))
+# Augment-Extractor([Github](https://github.com/bnbnac/augment-extractor))
 
 클라이언트가 영상 게시를 요청하면 [tftad 서버](https://github.com/bnbnac/tftad)는 Augment-Extractor로 관련 정보를 전송합니다. Augment-Extractor는 비디오를 다운받고, 분석하고, 필요한 장면을 추출하여 storage 서버에 저장합니다.
-
-예정: 추출한 장면을 가지고 정답선택 등 사용자와 상호작용 가능한 콘텐츠 개발
 
 ## 기술
 
