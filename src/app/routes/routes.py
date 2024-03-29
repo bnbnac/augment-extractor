@@ -31,9 +31,6 @@ def get_position():
         cur_frame = current_processing_info.cur_frame
         total_frame = current_processing_info.total_frame
 
-        if cur_position != 0:
-            state = "waiting"
-
         return jsonify({
             "curPosition": cur_position,
             "initialPosition": initial_position,

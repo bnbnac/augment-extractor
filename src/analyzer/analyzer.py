@@ -54,13 +54,13 @@ class VideoAnalyzer:
         cap.release()
         cv2.destroyAllWindows()
 
-        print("***************CAUGHT FRAMES******************", flush=True)
+        print("***************CAUGHT FRAMES***************", flush=True)
         print(results, flush=True)
 
         frame_intervals = self._generate_intervals(
         results, skip_frame)
 
-        print("**************RETURN*********************", flush=True)
+        print("***************RETURN***************", flush=True)
         print(frame_intervals, flush=True)
 
         return self._frame_intervals_to_time_intervals(frame_intervals, frame_rate)
@@ -103,8 +103,8 @@ class VideoAnalyzer:
 
             # the time between `last` and `cur` is larger than aug_select_time_limit && number of this bunch of frames are larger than self.accuracy
             if aug_select_time_limit * (skip_frame * self.accuracy) < cur - last:
-                if depth >= self.accuracy:
-                    ret.extend([aug_start - padding * 2, last + padding])
+                if depth > self.accuracy * 3:
+                    ret.extend([max(0, aug_start - padding * 7), last + padding])
                 depth = 0
                 aug_start = cur
         return ret
