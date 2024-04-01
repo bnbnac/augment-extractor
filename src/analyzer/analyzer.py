@@ -104,7 +104,7 @@ class VideoAnalyzer:
             # the time between `last` and `cur` is larger than aug_select_time_limit && number of this bunch of frames are larger than self.accuracy
             if aug_select_time_limit * (skip_frame * self.accuracy) < cur - last:
                 if depth > self.accuracy * 3:
-                    ret.extend([max(0, aug_start - padding * 7), last + padding])
+                    ret.extend([max(0, aug_start - padding * 7), min(current_processing_info.total_frame, last + padding)])
                 depth = 0
                 aug_start = cur
         return ret
