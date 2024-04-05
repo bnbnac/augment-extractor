@@ -1,4 +1,5 @@
 import time
+import datetime
 from src.worker.shared import process_queue, current_processing_info, LOCAL_DIR, TESSERACT_CMD, SPRING_SERVER
 from src.downloader.downloader import Downloader
 from src.analyzer.analyzer import VideoAnalyzer
@@ -18,10 +19,11 @@ def process_video_task():
             process_video(video_id, member_id, post_id)
             current_processing_info.done()
 
-
 # 이 함수는 크게 [다운로드, 분석, 컷, 작업물전송, 응답] 으로 나뉨
 def process_video(video_id, member_id, post_id):
 
+    start_time = datetime.datetime.now()
+    print("DOWNLOAD Start time:", start_time)
     # download
     downloader = Downloader()
     try:
@@ -32,20 +34,28 @@ def process_video(video_id, member_id, post_id):
     except Exception as e:
         print(f'unexpected err: {e}')
         return
+    end_time = datetime.datetime.now()
+    print("DOWNLOAD End time:", end_time)
 
+    start_time = datetime.datetime.now()
+    print("ANALYSIS Start time:", start_time)
     # alalysis
     analyzer = VideoAnalyzer(tesseract_cmd=TESSERACT_CMD)
     try:
         video_path_low = f'{LOCAL_DIR}/downloads/{member_id}/{post_id}/low'
         time_intervals = analyzer.get_time_interval_from_video(
-            video_path_low, ext_low)
+            video_path_low, ext_low, member_id, post_id)
     except RequestedQuitException:
         print('quit requested')
         return
     except Exception as e:
         print(f'unexpected err: {e}')
         return
+    end_time = datetime.datetime.now()
+    print("ANALYSIS End time:", end_time)
 
+    start_time = datetime.datetime.now()
+    print("CUT Start time:", start_time)
     # cut
     try:
         video_path_high = f'{LOCAL_DIR}/downloads/{member_id}/{post_id}/high'
@@ -57,6 +67,8 @@ def process_video(video_id, member_id, post_id):
     except Exception as e:
         print(f'unexpected err: {e}')
         return
+    end_time = datetime.datetime.now()
+    print("CUT End time:", end_time)
 
     # rsync
     result = []

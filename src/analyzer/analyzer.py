@@ -1,10 +1,13 @@
 import sys
+import os
+import datetime
 import cv2
 import pytesseract
 from typing import List
 from src.worker.shared import current_processing_info, TESSERACT_CMD
 from src.deleter.deleter import delete_local_directory
 from src.exception.exception import RequestedQuitException
+from src.worker.shared import LOCAL_DIR
 
 
 class VideoAnalyzer:
@@ -22,7 +25,9 @@ class VideoAnalyzer:
         self.threshold_val = threshold_val
         self.accuracy = accuracy
 
-    def get_time_interval_from_video(self, video_path: str, ext: str) -> List[str]:
+    def get_time_interval_from_video(self, video_path: str, ext: str, member_id: str, post_id: str) -> List[str]:
+        start_time = datetime.datetime.now()
+        print("CAPTURE_SAVE Start time:", start_time)
         current_processing_info.state = 'on analysis'
         cap = cv2.VideoCapture(f'{video_path}.{ext}')
 
@@ -34,25 +39,61 @@ class VideoAnalyzer:
         skip_frame = round(frame_rate * (1 / self.accuracy))
         frame_counter = 1
 
-        results = []
+        frames_dir = f'{LOCAL_DIR}/downloads/{member_id}/{post_id}/frames'
+        os.makedirs(frames_dir, exist_ok=True)
+
         while True:
             ret, frame = cap.read()
+
             if not ret:
                 break
 
             if frame_counter % skip_frame == 0:
+                height, width, _ = frame.shape # 매번이렇게할필요가
+                x = int(self.relative_x * width) # 매번이렇게할필요가
+                y = int(self.relative_y * height) # 매번이렇게할필요가
+                w = int(self.relative_w * width) # 매번이렇게할필요가
+                h = int(self.relative_h * height) # 매번이렇게할필요가
+
                 current_processing_info.cur_frame = frame_counter
                 if current_processing_info.quit_flag == 1:
                     delete_local_directory(current_processing_info.post_id)
                     raise RequestedQuitException
 
-                if self._is_aug_selection(frame):
-                    results.append(frame_counter)
+                frame_filename = os.path.join(frames_dir, f'frame_{frame_counter}.jpg')
+
+                # 이 전처리 자체도 분리할까? save capture, 그리고 전처리
+                roi = frame[y:y + h, x:x + w]
+                frame_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+                _, frame_binary = cv2.threshold(
+                    frame_gray, self.threshold_val, 255, cv2.THRESH_BINARY_INV)  # 흑백으로 만들어야 tesseract가 잘 찾음
+
+                cv2.imwrite(frame_filename, frame_binary)
 
             frame_counter += 1
 
         cap.release()
         cv2.destroyAllWindows()
+        end_time = datetime.datetime.now()
+        print("CAPTURE_SAVE End time:", end_time)
+    
+        start_time = datetime.datetime.now()
+        print("AUG_SELECTION Start time:", start_time)
+        results = []
+        for filename in os.listdir(frames_dir):
+            frame_index = int(filename.split('_')[1].split('.')[0])
+            current_processing_info.cur_frame = frame_index
+            if current_processing_info.quit_flag == 1:
+                delete_local_directory(current_processing_info.post_id)
+                raise RequestedQuitException
+
+            frame_path = os.path.join(frames_dir, filename)
+            frame_binary = cv2.imread(frame_path)
+            if self._is_aug_selection(frame_binary):
+                results.append(frame_index)
+
+        end_time = datetime.datetime.now()
+        print("AUG_SELECTION End time:", end_time)
 
         print("***************CAUGHT FRAMES***************", flush=True)
         print(results, flush=True)
@@ -65,17 +106,18 @@ class VideoAnalyzer:
 
         return self._frame_intervals_to_time_intervals(frame_intervals, frame_rate)
 
-    def _is_aug_selection(self, frame) -> str:
-        height, width, _ = frame.shape
-        x = int(self.relative_x * width)
-        y = int(self.relative_y * height)
-        w = int(self.relative_w * width)
-        h = int(self.relative_h * height)
 
-        roi = frame[y:y + h, x:x + w]
-        frame_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-        _, frame_binary = cv2.threshold(
-            frame_gray, self.threshold_val, 255, cv2.THRESH_BINARY_INV)  # 흑백으로 만들어야 tesseract가 잘 찾음
+    def _is_aug_selection(self, frame_binary) -> str:
+        # height, width, _ = frame.shape
+        # x = int(self.relative_x * width)
+        # y = int(self.relative_y * height)
+        # w = int(self.relative_w * width)
+        # h = int(self.relative_h * height)
+
+        # roi = frame[y:y + h, x:x + w]
+        # frame_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        # _, frame_binary = cv2.threshold(
+        #     frame_gray, self.threshold_val, 255, cv2.THRESH_BINARY_INV)  # 흑백으로 만들어야 tesseract가 잘 찾음
 
         text = set(pytesseract.image_to_string(
             frame_binary, lang='kor', config=self.custom_config))
