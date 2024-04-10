@@ -1,5 +1,8 @@
 import sys
 import cv2
+import os
+import concurrent.futures
+from concurrent.futures import ProcessPoolExecutor
 import pytesseract
 from typing import List
 from src.worker.shared import current_processing_info, TESSERACT_CMD
@@ -31,28 +34,32 @@ class VideoAnalyzer:
 
         if frame_rate < self.accuracy:
             print("too high analyzer accuracy")
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         skip_frame = round(frame_rate * (1 / self.accuracy))
-        frame_counter = 1
 
-        results = []
+        frames = []
+        frame_counter = 0
         while True:
-            ret, frame = cap.read()
+            ret = cap.grab()
             if not ret:
                 break
-
             if frame_counter % skip_frame == 0:
-                current_processing_info.cur_frame = frame_counter
-                if current_processing_info.quit_flag == 1:
-                    delete_local_directory(current_processing_info.post_id)
-                    raise RequestedQuitException
-
-                if self._is_aug_selection(frame):
-                    results.append(frame_counter)
-
+                ret, frame = cap.retrieve()
+                frames.append(frame)
             frame_counter += 1
+        
+        print(len(frames))
 
         cap.release()
         cv2.destroyAllWindows()
+
+        results = []
+        with concurrent.futures.ProcessPoolExecutor(max_workers=os.cpu_count() - 2) as executor:
+            for frame in frames:
+                future = executor.submit(self._is_aug_selection, frame)
+                if future.result(): ########여부터 다시보기
+                    frame_index = frames.index(frame) + 1
+                    results.append(frame_index)
 
         print("***************CAUGHT FRAMES***************", flush=True)
         print(results, flush=True)
