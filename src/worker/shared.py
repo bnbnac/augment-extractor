@@ -1,6 +1,6 @@
 from queue import Queue
 import json
-
+import multiprocessing
 
 class ProcessQueue(Queue):
     def __init__(self):
@@ -55,7 +55,8 @@ class CurProcess:
 
 process_queue = ProcessQueue()
 current_processing_info = CurProcess()
-
+frames_queue = multiprocessing.Queue()
+results_queue = multiprocessing.Queue()
 
 def load_config(filename):
     with open(filename, 'r') as f:
