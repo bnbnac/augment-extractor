@@ -11,7 +11,7 @@ from src.exception.exception import RequestedQuitException
 
 
 class VideoAnalyzer:
-    def __init__(self, tesseract_cmd: str = '/usr/bin/tesseract',
+    def __init__(self, tesseract_cmd: str = TESSERACT_CMD,
                  custom_config: str = r'--psm 6',
                  relative_x: float = 0.33, relative_y: float = 0.1,
                  relative_w: float = 0.33, relative_h: float = 0.3,
@@ -57,9 +57,10 @@ class VideoAnalyzer:
         with concurrent.futures.ProcessPoolExecutor(max_workers=os.cpu_count() - 2) as executor:
             for frame in frames:
                 future = executor.submit(self._is_aug_selection, frame)
-                if future.result(): ########여부터 다시보기
+                if future.result():
                     frame_index = frames.index(frame) + 1
                     results.append(frame_index)
+                print(results)
 
         print("***************CAUGHT FRAMES***************", flush=True)
         print(results, flush=True)
@@ -72,7 +73,7 @@ class VideoAnalyzer:
 
         return self._frame_intervals_to_time_intervals(frame_intervals, frame_rate)
 
-    def _is_aug_selection(self, frame) -> str:
+    def _is_aug_selection(self, frame) -> bool:
         height, width, _ = frame.shape
         x = int(self.relative_x * width)
         y = int(self.relative_y * height)
@@ -91,7 +92,7 @@ class VideoAnalyzer:
         score = sum(1 for l in ['선', '서', '택', '태'] if l in text)
 
         # 어차피 frame이 많으니까 원치않는 frame을 피하기 위해 2점 이상으로
-        return score >= 2
+        return bool(score >= 2)
 
     def _generate_intervals(self, result_frames, skip_frame):
         ret = []
