@@ -1,3 +1,4 @@
+import multiprocessing
 import sys
 import cv2
 import os
@@ -8,6 +9,7 @@ from typing import List
 from src.worker.shared import current_processing_info, TESSERACT_CMD
 from src.deleter.deleter import delete_local_directory
 from src.exception.exception import RequestedQuitException
+from src.worker.shared import frames_queue, results_queue
 
 
 class VideoAnalyzer:
@@ -24,6 +26,16 @@ class VideoAnalyzer:
         self.relative_h = relative_h
         self.threshold_val = threshold_val
         self.accuracy = accuracy
+
+    def multi_tesseract(self, frames_queue, results_queue):
+        while True:
+            frame_info = frames_queue.get()
+            if frame_info is None:
+                break
+            frame, frame_counter = frame_info
+
+            if self._is_aug_selection(frame=frame):
+                results_queue.put(frame_counter)
 
     def get_time_interval_from_video(self, video_path: str, ext: str) -> List[str]:
         current_processing_info.state = 'on analysis'
@@ -46,25 +58,33 @@ class VideoAnalyzer:
             if frame_counter % skip_frame == 0:
                 ret, frame = cap.retrieve()
                 frames.append(frame)
+                frames_queue.put((frame, frame_counter))
             frame_counter += 1
-        
-        print(len(frames))
 
         cap.release()
         cv2.destroyAllWindows()
 
+        num_processes = 3
+        for _ in range(num_processes):
+            frames_queue.put(None)
+
+        processes = []
+        for _ in range(num_processes):
+            process = multiprocessing.Process(target=self.multi_tesseract, args=(frames_queue, results_queue))
+            process.start()
+            processes.append(process)
+
+        for process in processes:
+            process.join()
+            
         results = []
-        with concurrent.futures.ProcessPoolExecutor(max_workers=os.cpu_count() - 2) as executor:
-            for frame in frames:
-                future = executor.submit(self._is_aug_selection, frame)
-                if future.result():
-                    frame_index = frames.index(frame) + 1
-                    results.append(frame_index)
-                print(results)
+        while not results_queue.empty():
+            results.append(results_queue.get())
 
         print("***************CAUGHT FRAMES***************", flush=True)
         print(results, flush=True)
 
+        results.sort()
         frame_intervals = self._generate_intervals(
         results, skip_frame)
 
