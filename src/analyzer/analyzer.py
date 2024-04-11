@@ -29,6 +29,7 @@ class VideoAnalyzer:
         start_time = datetime.datetime.now()
         print("CAPTURE_SAVE Start time:", start_time)
         current_processing_info.state = 'on analysis'
+        
         cap = cv2.VideoCapture(f'{video_path}.{ext}')
 
         current_processing_info.total_frame = cap.get(cv2.CAP_PROP_FRAME_COUNT)
@@ -49,11 +50,11 @@ class VideoAnalyzer:
                 break
 
             if frame_counter % skip_frame == 0:
-                height, width, _ = frame.shape # 매번이렇게할필요가
-                x = int(self.relative_x * width) # 매번이렇게할필요가
-                y = int(self.relative_y * height) # 매번이렇게할필요가
-                w = int(self.relative_w * width) # 매번이렇게할필요가
-                h = int(self.relative_h * height) # 매번이렇게할필요가
+                height, width, _ = frame.shape
+                x = int(self.relative_x * width)
+                y = int(self.relative_y * height)
+                w = int(self.relative_w * width)
+                h = int(self.relative_h * height)
 
                 current_processing_info.cur_frame = frame_counter
                 if current_processing_info.quit_flag == 1:
@@ -62,11 +63,10 @@ class VideoAnalyzer:
 
                 frame_filename = os.path.join(frames_dir, f'frame_{frame_counter}.jpg')
 
-                # 이 전처리 자체도 분리할까? save capture, 그리고 전처리
                 roi = frame[y:y + h, x:x + w]
                 frame_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
                 _, frame_binary = cv2.threshold(
-                    frame_gray, self.threshold_val, 255, cv2.THRESH_BINARY_INV)  # 흑백으로 만들어야 tesseract가 잘 찾음
+                    frame_gray, self.threshold_val, 255, cv2.THRESH_BINARY_INV)
 
                 cv2.imwrite(frame_filename, frame_binary)
 
@@ -108,29 +108,16 @@ class VideoAnalyzer:
 
 
     def _is_aug_selection(self, frame_binary) -> str:
-        # height, width, _ = frame.shape
-        # x = int(self.relative_x * width)
-        # y = int(self.relative_y * height)
-        # w = int(self.relative_w * width)
-        # h = int(self.relative_h * height)
-
-        # roi = frame[y:y + h, x:x + w]
-        # frame_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-        # _, frame_binary = cv2.threshold(
-        #     frame_gray, self.threshold_val, 255, cv2.THRESH_BINARY_INV)  # 흑백으로 만들어야 tesseract가 잘 찾음
-
         text = set(pytesseract.image_to_string(
             frame_binary, lang='kor', config=self.custom_config))
 
-        # criteria에 '증', '강'을 넣으면 이상한 장면을 가지고 옴 'ㅇ' 받침에 약한듯
         score = sum(1 for l in ['선', '서', '택', '태'] if l in text)
 
-        # 어차피 frame이 많으니까 원치않는 frame을 피하기 위해 2점 이상으로
         return score >= 2
 
     def _generate_intervals(self, result_frames, skip_frame):
         ret = []
-        result_frames.append(sys.maxsize) # 마지막 구간을 위한 dummy
+        result_frames.append(sys.maxsize)
         depth = 0
         aug_select_time_limit = 20  # 컷편집 한 영상. 풀영상은 이걸 더 높게. 영상업로드시 컷편집여부를 선택하도록 유도함
         padding = 3 * skip_frame * self.accuracy
@@ -143,7 +130,6 @@ class VideoAnalyzer:
             depth += 1
             last, cur = cur, f
 
-            # the time between `last` and `cur` is larger than aug_select_time_limit && number of this bunch of frames are larger than self.accuracy
             if aug_select_time_limit * (skip_frame * self.accuracy) < cur - last:
                 if depth > self.accuracy * 3:
                     ret.extend([max(0, aug_start - padding * 7), min(current_processing_info.total_frame, last + padding)])
