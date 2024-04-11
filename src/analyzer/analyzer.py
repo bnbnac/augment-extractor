@@ -8,7 +8,7 @@ from src.exception.exception import RequestedQuitException
 
 
 class VideoAnalyzer:
-    def __init__(self, tesseract_cmd: str = '/usr/bin/tesseract',
+    def __init__(self, tesseract_cmd: str = TESSERACT_CMD,
                  custom_config: str = r'--psm 6',
                  relative_x: float = 0.33, relative_y: float = 0.1,
                  relative_w: float = 0.33, relative_h: float = 0.3,
