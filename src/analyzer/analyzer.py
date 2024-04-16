@@ -41,7 +41,7 @@ class VideoAnalyzer:
 
     def get_time_interval_from_video(self, video_path: str, ext: str, member_id: str, post_id: str) -> List[str]:
         start_time = datetime.datetime.now()
-        print("CAPTURE_SAVE Start time:", start_time)
+        print("CAPTURE_SAVE Start time:", start_time, flush=True)
         current_processing_info.state = 'on analysis'
         
         cap = cv2.VideoCapture(f'{video_path}.{ext}')
@@ -54,7 +54,6 @@ class VideoAnalyzer:
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         skip_frame = round(frame_rate * (1 / self.accuracy))
 
-        frames = []
         frame_counter = 0
         while True:
             ret = cap.grab()
@@ -62,17 +61,16 @@ class VideoAnalyzer:
                 break
             if frame_counter % skip_frame == 0:
                 ret, frame = cap.retrieve()
-                frames.append(frame)
                 frames_queue.put((frame, frame_counter))
             frame_counter += 1
 
         cap.release()
         cv2.destroyAllWindows()
         end_time = datetime.datetime.now()
-        print("CAPTURE_SAVE End time:", end_time)
+        print("CAPTURE_SAVE End time:", end_time, flush=True)
     
         start_time = datetime.datetime.now()
-        print("AUG_SELECTION Start time:", start_time)
+        print("AUG_SELECTION Start time:", start_time, flush=True)
 
         num_processes = 3
         for _ in range(num_processes):
@@ -113,9 +111,8 @@ class VideoAnalyzer:
         roi = frame[y:y + h, x:x + w]
         frame_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
         _, frame_binary = cv2.threshold(
-            frame_gray, self.threshold_val, 255, cv2.THRESH_BINARY_INV)  # 흑백으로 만들어야 tesseract가 잘 찾음
+            frame_gray, self.threshold_val, 255, cv2.THRESH_BINARY_INV)
 
-    def _is_aug_selection(self, frame_binary) -> str:
         text = set(pytesseract.image_to_string(
             frame_binary, lang='kor', config=self.custom_config))
 
