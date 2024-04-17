@@ -1,17 +1,13 @@
 import multiprocessing
 import sys
-import os
 import datetime
 import cv2
 import os
-import concurrent.futures
-from concurrent.futures import ProcessPoolExecutor
 import pytesseract
 from typing import List
-from src.worker.shared import current_processing_info, TESSERACT_CMD
-from src.deleter.deleter import delete_local_directory
-from src.exception.exception import RequestedQuitException
+from src.worker.shared import current_processing_info, TESSERACT_CMD, NUM_PROCESS, LOCAL_DIR
 from src.worker.shared import frames_queue, results_queue
+from src.exception.exception import RequestedQuitException
 
 
 class VideoAnalyzer:
@@ -29,14 +25,16 @@ class VideoAnalyzer:
         self.threshold_val = threshold_val
         self.accuracy = accuracy
 
-    def multi_tesseract(self, frames_queue, results_queue):
+    def multi_tesseract(self, frames_dir, frames_queue, results_queue):
         while True:
-            frame_info = frames_queue.get()
-            if frame_info is None:
+            frame_counter = frames_queue.get()
+            if frame_counter is None:
                 break
-            frame, frame_counter = frame_info
 
-            if self._is_aug_selection(frame=frame):
+            img_path = f'{frames_dir}/frame_{frame_counter}.jpg'
+
+            # if self._is_aug_selection(frame=frame):
+            if self._is_aug_selection(img_path=img_path):
                 results_queue.put(frame_counter)
 
     def get_time_interval_from_video(self, video_path: str, ext: str, member_id: str, post_id: str) -> List[str]:
@@ -54,14 +52,21 @@ class VideoAnalyzer:
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         skip_frame = round(frame_rate * (1 / self.accuracy))
 
+
         frame_counter = 0
+        frames_dir = f'{LOCAL_DIR}/downloads/{member_id}/{post_id}/temp'
+        os.makedirs(frames_dir, exist_ok=True)
+
         while True:
             ret = cap.grab()
             if not ret:
                 break
             if frame_counter % skip_frame == 0:
                 ret, frame = cap.retrieve()
-                frames_queue.put((frame, frame_counter))
+                frames_queue.put(frame_counter)
+                frame_filename = os.path.join(frames_dir, f"frame_{frame_counter}.jpg")
+                cv2.imwrite(frame_filename, frame)
+
             frame_counter += 1
 
         cap.release()
@@ -72,13 +77,12 @@ class VideoAnalyzer:
         start_time = datetime.datetime.now()
         print("AUG_SELECTION Start time:", start_time, flush=True)
 
-        num_processes = 3
-        for _ in range(num_processes):
+        for _ in range(NUM_PROCESS):
             frames_queue.put(None)
 
         processes = []
-        for _ in range(num_processes):
-            process = multiprocessing.Process(target=self.multi_tesseract, args=(frames_queue, results_queue))
+        for _ in range(NUM_PROCESS):
+            process = multiprocessing.Process(target=self.multi_tesseract, args=(frames_dir, frames_queue, results_queue))
             process.start()
             processes.append(process)
 
@@ -101,7 +105,9 @@ class VideoAnalyzer:
 
         return self._frame_intervals_to_time_intervals(frame_intervals, frame_rate)
 
-    def _is_aug_selection(self, frame) -> bool:
+    # def _is_aug_selection(self, frame) -> bool:
+    def _is_aug_selection(self, img_path) -> bool:
+        frame = cv2.imread(img_path)
         height, width, _ = frame.shape
         x = int(self.relative_x * width)
         y = int(self.relative_y * height)
@@ -118,6 +124,7 @@ class VideoAnalyzer:
 
         score = sum(1 for l in ['선', '서', '택', '태'] if l in text)
 
+        os.remove(img_path)
         return score >= 2
 
     def _generate_intervals(self, result_frames, skip_frame):
