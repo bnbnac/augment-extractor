@@ -1,16 +1,10 @@
 import multiprocessing
 import sys
-import os
 import datetime
 import cv2
-import os
-import concurrent.futures
-from concurrent.futures import ProcessPoolExecutor
 import pytesseract
 from typing import List
-from src.worker.shared import current_processing_info, TESSERACT_CMD
-from src.deleter.deleter import delete_local_directory
-from src.exception.exception import RequestedQuitException
+from src.worker.shared import current_processing_info, TESSERACT_CMD, NUM_PROCESS
 from src.worker.shared import frames_queue, results_queue
 
 
@@ -72,12 +66,11 @@ class VideoAnalyzer:
         start_time = datetime.datetime.now()
         print("AUG_SELECTION Start time:", start_time, flush=True)
 
-        num_processes = 3
-        for _ in range(num_processes):
+        for _ in range(NUM_PROCESS):
             frames_queue.put(None)
 
         processes = []
-        for _ in range(num_processes):
+        for _ in range(NUM_PROCESS):
             process = multiprocessing.Process(target=self.multi_tesseract, args=(frames_queue, results_queue))
             process.start()
             processes.append(process)
