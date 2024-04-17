@@ -23,22 +23,23 @@ def process_video_task():
 def process_video(video_id, member_id, post_id):
 
     start_time = datetime.datetime.now()
-    print("DOWNLOAD Start time:", start_time)
+    print("DOWNLOAD Start time:", start_time, flush=True)
     # download
     downloader = Downloader()
     try:
         ext_low, ext_high = downloader.download(video_id, member_id, post_id)
     except RequestedQuitException:
-        print('quit requested')
+        print('quit requested', flush=True)
         return
     except Exception as e:
-        print(f'unexpected err: {e}')
+        print(f'unexpected err: {e}', flush=True)
         return
     end_time = datetime.datetime.now()
-    print("DOWNLOAD End time:", end_time)
+    print("DOWNLOAD End time:", end_time, flush=True)
 
     start_time = datetime.datetime.now()
-    print("ANALYSIS Start time:", start_time)
+    print("ANALYSIS Start time:", start_time, flush=True)
+
     # alalysis
     analyzer = VideoAnalyzer(tesseract_cmd=TESSERACT_CMD)
     try:
@@ -46,29 +47,30 @@ def process_video(video_id, member_id, post_id):
         time_intervals = analyzer.get_time_interval_from_video(
             video_path_low, ext_low, member_id, post_id)
     except RequestedQuitException:
-        print('quit requested')
+        print('quit requested', flush=True)
         return
     except Exception as e:
-        print(f'unexpected err: {e}')
+        print(f'unexpected err: {e}', flush=True)
         return
     end_time = datetime.datetime.now()
-    print("ANALYSIS End time:", end_time)
+    print("ANALYSIS End time:", end_time, flush=True)
 
     start_time = datetime.datetime.now()
-    print("CUT Start time:", start_time)
+    print("CUT Start time:", start_time, flush=True)
+    
     # cut
     try:
         video_path_high = f'{LOCAL_DIR}/downloads/{member_id}/{post_id}/high'
         complete = cutter.cut_video_segments(
             time_intervals, video_path_high, ext_high, member_id, post_id)
     except RequestedQuitException:
-        print('quit requested')
+        print('quit requested', flush=True)
         return
     except Exception as e:
-        print(f'unexpected err: {e}')
+        print(f'unexpected err: {e}', flush=True)
         return
     end_time = datetime.datetime.now()
-    print("CUT End time:", end_time)
+    print("CUT End time:", end_time, flush=True)
 
     # rsync
     result = []
@@ -86,7 +88,7 @@ def process_video(video_id, member_id, post_id):
         response = requests.post(external_server_url, json=payload)
         response.raise_for_status()
 
-        print(f"External server response: {response.text}")
+        print(f"External server response: {response.text}", flush=True)
 
         # current_processing_info.done() 하기 전에 delete 요청이 올 수 있다.
         # return 하기 전 delete 요청이 온 적 있는지 최종 확인
@@ -96,7 +98,7 @@ def process_video(video_id, member_id, post_id):
             return
 
     except requests.exceptions.RequestException as e:
-        print(f"Error sending request to external server: {e}")
+        print(f"Error sending request to external server: {e}", flush=True)
 
 
 def delete_by_post_id(member_id, post_id):
