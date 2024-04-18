@@ -120,7 +120,7 @@ class VideoAnalyzer:
         processes = []
         for _ in range(NUM_PROCESS):
             try:
-                process = multiprocessing.Process(target=self.multi_tesseract, args=(member_id, post_id))
+                process = multiprocessing.Process(target=self.multi_tesseract)
                 process.start()
                 processes.append(process)
             except RequestedQuitException:
