@@ -35,25 +35,32 @@ class VideoAnalyzer:
         frame_count = self.save_capture_frames(video_path, ext, member_id, post_id)
         current_processing_info.total_frame = frame_count
         
-        frame_intervals = self.get_time_interval_from_video(member_id, post_id)
+        try:
+            frame_intervals = self.get_time_interval_from_video(member_id, post_id)
+        except RequestedQuitException:
+            raise
         
         return self._frame_intervals_to_time_intervals(frame_intervals)
 
     def multi_tesseract(self):
-        while True:
-            if current_processing_info.quit_flag == 1:
-                raise RequestedQuitException
-            
-            current_processing_info.cur_frame = current_processing_info.total_frame - frames_queue.qsize()
+        try:
+            while True:
+                if current_processing_info.quit_flag == 1:
+                    raise RequestedQuitException
+                
+                current_processing_info.cur_frame = current_processing_info.total_frame - frames_queue.qsize()
 
-            frame_count = frames_queue.get()
-            if frame_count is None:
-                break
+                frame_count = frames_queue.get()
+                if frame_count is None:
+                    break
 
-            img_path = f'{self.frames_dir}/frame_{frame_count}.jpg'
+                img_path = f'{self.frames_dir}/frame_{frame_count}.jpg'
 
-            if self._is_aug_selection(img_path=img_path):
-                results_queue.put(frame_count)
+                if self._is_aug_selection(img_path=img_path):
+                    results_queue.put(frame_count)
+        except RequestedQuitException:
+            raise
+
 
     def img_post_work(self, frame):
         height, width, _ = frame.shape
