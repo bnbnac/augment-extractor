@@ -11,7 +11,7 @@ from src.deleter.deleter import delete_local_directory
 def cut_video_segments(time_intervals: list[str], input_video_path, ext, member_id, post_id):
     current_processing_info.state = 'cutting'
     if current_processing_info.quit_flag == 1:
-        delete_local_directory(current_processing_info.post_id)
+        delete_local_directory(member_id, current_processing_info.post_id)
         raise RequestedQuitException
 
     complete = []

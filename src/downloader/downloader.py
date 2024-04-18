@@ -14,12 +14,12 @@ class Downloader:
 
         low_ext = self.download_low_qual(video_id, member_id, post_id)
         if current_processing_info.quit_flag == 1:
-            delete_local_directory(current_processing_info.post_id)
+            delete_local_directory(member_id, current_processing_info.post_id)
             raise RequestedQuitException
 
         high_xet = self.download_high_qual(video_id, member_id, post_id)
         if current_processing_info.quit_flag == 1:
-            delete_local_directory(current_processing_info.post_id)
+            delete_local_directory(member_id, current_processing_info.post_id)
             raise RequestedQuitException
 
         return low_ext, high_xet

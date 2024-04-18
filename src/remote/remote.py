@@ -7,7 +7,7 @@ import subprocess
 def query_rsync(member_id, post_id, start_time_without_colons, end_time_without_colons, result):
     current_processing_info.state = 'sending the result data'
     if current_processing_info.quit_flag == 1:
-        delete_local_directory(current_processing_info.post_id)
+        delete_local_directory(member_id, current_processing_info.post_id)
         raise RequestedQuitException
 
     file_name = f"{start_time_without_colons}_{end_time_without_colons}.mp4"
