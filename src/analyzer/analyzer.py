@@ -42,24 +42,21 @@ class VideoAnalyzer:
         
         return self._frame_intervals_to_time_intervals(frame_intervals)
 
-    def multi_tesseract(self):
+    def multi_tesseract(self, quit_event):
         try:
-            while True:
+            while not frames_queue.empty():
                 if current_processing_info.quit_flag == 1:
                     raise RequestedQuitException
                 
                 current_processing_info.cur_frame = current_processing_info.total_frame - frames_queue.qsize()
 
                 frame_count = frames_queue.get()
-                if frame_count is None:
-                    break
-
                 img_path = f'{self.frames_dir}/frame_{frame_count}.jpg'
-
                 if self._is_aug_selection(img_path=img_path):
                     results_queue.put(frame_count)
+
         except RequestedQuitException as e:
-            raise e
+            quit_event.set()
 
 
     def img_post_work(self, frame):
@@ -121,23 +118,18 @@ class VideoAnalyzer:
         start_time = datetime.datetime.now()
         print("AUG_SELECTION Start time:", start_time, flush=True)
 
-        for _ in range(NUM_PROCESS):
-            frames_queue.put(None)
+        quit_event = multiprocessing.Event()
 
         processes = []
-        try:
-            for _ in range(NUM_PROCESS):
-                process = multiprocessing.Process(target=self.multi_tesseract)
-                process.start()
-                processes.append(process)
-        except RequestedQuitException as e:
-            for process in processes:
-                process.terminate()
-            delete_local_directory(member_id, post_id)
-            raise e
-
+        for _ in range(NUM_PROCESS):
+            process = multiprocessing.Process(target=self.multi_tesseract, args=(quit_event,))
+            process.start()
+            processes.append(process)
         for process in processes:
             process.join()
+
+        if quit_event.is_set():
+            delete_local_directory(member_id, post_id)
             
         results = []
         while not results_queue.empty():
