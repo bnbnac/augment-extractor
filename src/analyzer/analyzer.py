@@ -39,10 +39,9 @@ class VideoAnalyzer:
         
         return self._frame_intervals_to_time_intervals(frame_intervals)
 
-    def multi_tesseract(self, member_id, post_id):
+    def multi_tesseract(self):
         while True:
             if current_processing_info.quit_flag == 1:
-                delete_local_directory(member_id, post_id)
                 raise RequestedQuitException
             
             current_processing_info.cur_frame = current_processing_info.total_frame - frames_queue.qsize()
