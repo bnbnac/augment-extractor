@@ -38,7 +38,7 @@ class VideoAnalyzer:
         try:
             frame_intervals = self.get_time_interval_from_video(member_id, post_id)
         except RequestedQuitException:
-            raise
+            raise RequestedQuitException
         
         return self._frame_intervals_to_time_intervals(frame_intervals)
 
@@ -59,7 +59,7 @@ class VideoAnalyzer:
                 if self._is_aug_selection(img_path=img_path):
                     results_queue.put(frame_count)
         except RequestedQuitException:
-            raise
+            raise RequestedQuitException
 
 
     def img_post_work(self, frame):
@@ -134,7 +134,7 @@ class VideoAnalyzer:
                 for process in processes:
                     process.terminate()
                 delete_local_directory(member_id, post_id)
-                raise
+                raise RequestedQuitException
 
         for process in processes:
             process.join()
