@@ -46,6 +46,7 @@ class VideoAnalyzer:
         try:
             while not frames_queue.empty():
                 if current_processing_info.quit_flag == 1:
+                    print("can't i notice the quit queue?")
                     raise RequestedQuitException
                 
                 current_processing_info.cur_frame = current_processing_info.total_frame - frames_queue.qsize()
@@ -129,6 +130,7 @@ class VideoAnalyzer:
             process.join()
 
         if quit_event.is_set():
+            print("got event")
             delete_local_directory(member_id, post_id)
             
         results = []
