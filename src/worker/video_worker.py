@@ -102,8 +102,10 @@ def process_video(video_id, member_id, post_id):
 
 
 def delete_by_post_id(member_id, post_id):
-    if (current_processing_info.is_current_job(post_id)):
+    if current_processing_info.is_current_job(post_id):
         current_processing_info.quit_flag = 1
+        if not current_processing_info.event != None:
+            current_processing_info.event.set()
         return 'QUIT current job'
 
     _, position = process_queue.find_position(post_id)

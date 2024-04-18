@@ -42,22 +42,17 @@ class VideoAnalyzer:
         
         return self._frame_intervals_to_time_intervals(frame_intervals)
 
-    def multi_tesseract(self, quit_event):
-        try:
-            while not frames_queue.empty():
-                if current_processing_info.quit_flag == 1:
-                    print("can't i notice the quit queue?")
-                    raise RequestedQuitException
-                
-                current_processing_info.cur_frame = current_processing_info.total_frame - frames_queue.qsize()
+    def multi_tesseract(self, quit_event_for_analyzer_multiprocessing):
+        while not frames_queue.empty():
+            if quit_event_for_analyzer_multiprocessing.is_set():
+                raise RequestedQuitException
+            
+            current_processing_info.cur_frame = current_processing_info.total_frame - frames_queue.qsize()
 
-                frame_count = frames_queue.get()
-                img_path = f'{self.frames_dir}/frame_{frame_count}.jpg'
-                if self._is_aug_selection(img_path=img_path):
-                    results_queue.put(frame_count)
-
-        except RequestedQuitException as e:
-            quit_event.set()
+            frame_count = frames_queue.get()
+            img_path = f'{self.frames_dir}/frame_{frame_count}.jpg'
+            if self._is_aug_selection(img_path=img_path):
+                results_queue.put(frame_count)
 
 
     def img_post_work(self, frame):
@@ -119,18 +114,18 @@ class VideoAnalyzer:
         start_time = datetime.datetime.now()
         print("AUG_SELECTION Start time:", start_time, flush=True)
 
-        quit_event = multiprocessing.Event()
+        quit_event_for_analyzer_multiprocessing = multiprocessing.Event()
+        current_processing_info.event = quit_event_for_analyzer_multiprocessing
 
         processes = []
         for _ in range(NUM_PROCESS):
-            process = multiprocessing.Process(target=self.multi_tesseract, args=(quit_event,))
+            process = multiprocessing.Process(target=self.multi_tesseract, args=(quit_event_for_analyzer_multiprocessing,))
             process.start()
             processes.append(process)
         for process in processes:
             process.join()
 
-        if quit_event.is_set():
-            print("got event")
+        if quit_event_for_analyzer_multiprocessing.is_set():
             delete_local_directory(member_id, post_id)
             
         results = []

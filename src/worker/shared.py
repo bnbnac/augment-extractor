@@ -41,6 +41,7 @@ class CurProcess:
         self.cur_frame = 0
         self.total_frame = 0
         self.quit_flag = 0
+        self.event = None
 
     def is_current_job(self, post_id):
         return self.post_id == post_id
@@ -51,6 +52,7 @@ class CurProcess:
         self.cur_frame = 0
         self.total_frame = 0
         self.quit_flag = 0
+        self.event = None
 
 
 process_queue = ProcessQueue()
