@@ -1,5 +1,5 @@
 from flask import request, jsonify, Blueprint
-from src.worker.shared import process_queue, current_processing_info
+from src.worker.shared import process_queue, current_processing_info, frames_queue
 from src.worker.video_worker import delete_by_post_id, query_remove_remote_question
 
 bp = Blueprint('api', __name__, url_prefix='/')
@@ -28,8 +28,8 @@ def get_position():
         initial_position, cur_position = process_queue.find_position(post_id)
         cur_post_id = current_processing_info.post_id
         state = current_processing_info.state
-        cur_frame = current_processing_info.cur_frame
         total_frame = current_processing_info.total_frame
+        cur_frame = total_frame - frames_queue.qsize()
 
         return jsonify({
             "curPosition": cur_position,
