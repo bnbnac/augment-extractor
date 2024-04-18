@@ -43,23 +43,20 @@ class VideoAnalyzer:
         return self._frame_intervals_to_time_intervals(frame_intervals)
 
     def multi_tesseract(self):
-        try:
-            while True:
-                if current_processing_info.quit_flag == 1:
-                    raise RequestedQuitException
-                
-                current_processing_info.cur_frame = current_processing_info.total_frame - frames_queue.qsize()
+        while True:
+            if current_processing_info.quit_flag == 1:
+                raise RequestedQuitException
+            
+            current_processing_info.cur_frame = current_processing_info.total_frame - frames_queue.qsize()
 
-                frame_count = frames_queue.get()
-                if frame_count is None:
-                    break
+            frame_count = frames_queue.get()
+            if frame_count is None:
+                break
 
-                img_path = f'{self.frames_dir}/frame_{frame_count}.jpg'
+            img_path = f'{self.frames_dir}/frame_{frame_count}.jpg'
 
-                if self._is_aug_selection(img_path=img_path):
-                    results_queue.put(frame_count)
-        except RequestedQuitException:
-            raise RequestedQuitException
+            if self._is_aug_selection(img_path=img_path):
+                results_queue.put(frame_count)
 
 
     def img_post_work(self, frame):
