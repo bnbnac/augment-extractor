@@ -45,7 +45,7 @@ class VideoAnalyzer:
                 delete_local_directory(member_id, post_id)
                 raise RequestedQuitException
             
-            current_processing_info.cur_frame = frames_queue.qsize()
+            current_processing_info.cur_frame = current_processing_info.total_frame - frames_queue.qsize()
 
             frame_count = frames_queue.get()
             if frame_count is None:
@@ -119,16 +119,16 @@ class VideoAnalyzer:
             frames_queue.put(None)
 
         processes = []
-        try:
-            for _ in range(NUM_PROCESS):
+        for _ in range(NUM_PROCESS):
+            try:
                 process = multiprocessing.Process(target=self.multi_tesseract, args=(member_id, post_id))
                 process.start()
                 processes.append(process)
-        except RequestedQuitException:
-            for process in processes:
-                process.terminate()
-            delete_local_directory(member_id, post_id)
-            raise
+            except RequestedQuitException:
+                for process in processes:
+                    process.terminate()
+                delete_local_directory(member_id, post_id)
+                raise
 
         for process in processes:
             process.join()
