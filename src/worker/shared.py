@@ -29,30 +29,29 @@ class ProcessQueue(Queue):
 
         while not self.empty():
             temp_queue.put(self.get())
-    # 다른 데서 이 shared instance를 import 하는 방식을 잘 모르겠어서 일단 이렇게
         while not temp_queue.empty():
             self.put(temp_queue.get())
 
 
-class CurProcess:
+class CurProcess():
     def __init__(self):
-        self.post_id = ''
-        self.state = 'standby'
-        self.cur_frame = 0
-        self.total_frame = 0
-        self.quit_flag = 0
-        self.event = None
+        self.manager = multiprocessing.Manager()
+        self.queue = self.manager.Queue()
+        self.post_id = self.manager.Value('s', '')
+        self.state = self.manager.Value('s', 'standby')
+        self.cur_frame = self.manager.Value('i', 0)
+        self.total_frame = self.manager.Value('i', 0)
+        self.quit_flag = self.manager.Value('i', 0)
 
     def is_current_job(self, post_id):
-        return self.post_id == post_id
+        return self.post_id.value == post_id
 
     def done(self):
-        self.post_id = ''
-        self.state = 'standby'
-        self.cur_frame = 0
-        self.total_frame = 0
-        self.quit_flag = 0
-        self.event = None
+        self.post_id.value = ''
+        self.state.value = 'standby'
+        self.cur_frame.value = 0
+        self.total_frame.value = 0
+        self.quit_flag.value = 0
 
 
 process_queue = ProcessQueue()

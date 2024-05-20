@@ -15,7 +15,7 @@ def process_video_task():
         time.sleep(5)
         if not (process_queue.empty()):
             video_id, member_id, post_id, _ = process_queue.get()
-            current_processing_info.post_id = post_id
+            current_processing_info.post_id.value = post_id
             process_video(video_id, member_id, post_id)
             current_processing_info.done()
 
@@ -92,8 +92,8 @@ def process_video(video_id, member_id, post_id):
 
         # current_processing_info.done() 하기 전에 delete 요청이 올 수 있다.
         # return 하기 전 delete 요청이 온 적 있는지 최종 확인
-        current_processing_info.state = 'sending resopnse after local data deleted'
-        if current_processing_info.quit_flag == 1:
+        current_processing_info.state.value = 'sending resopnse after local data deleted'
+        if current_processing_info.quit_flag.value == 1:
             query_remove_remote_directory(member_id, post_id)
             return
 
@@ -103,9 +103,7 @@ def process_video(video_id, member_id, post_id):
 
 def delete_by_post_id(member_id, post_id):
     if current_processing_info.is_current_job(post_id):
-        current_processing_info.quit_flag = 1
-        if not current_processing_info.event != None:
-            current_processing_info.event.set()
+        current_processing_info.quit_flag.value = 1
         return 'QUIT current job'
 
     _, position = process_queue.find_position(post_id)

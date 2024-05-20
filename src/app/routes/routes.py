@@ -26,10 +26,10 @@ def get_position():
     try:
         post_id = request.args.get('id')
         initial_position, cur_position = process_queue.find_position(post_id)
-        cur_post_id = current_processing_info.post_id
-        state = current_processing_info.state
-        total_frame = current_processing_info.total_frame
-        cur_frame = current_processing_info.cur_frame
+        cur_post_id = current_processing_info.post_id.value
+        state = current_processing_info.state.value
+        total_frame = current_processing_info.total_frame.value
+        cur_frame = current_processing_info.cur_frame.value
 
         return jsonify({
             "curPosition": cur_position,

@@ -30,10 +30,10 @@ class VideoAnalyzer:
         self.skip_frame = None
 
     def analyze(self, video_path: str, ext: str, member_id: str, post_id: str) -> List[str]:
-        current_processing_info.state = 'on analysis'
+        current_processing_info.state.value = 'on analysis'
 
         frame_count = self.save_capture_frames(video_path, ext, member_id, post_id)
-        current_processing_info.total_frame = frame_count
+        current_processing_info.total_frame.value = frame_count
         
         try:
             frame_intervals = self.get_time_interval_from_video(member_id, post_id)
@@ -42,12 +42,11 @@ class VideoAnalyzer:
         
         return self._frame_intervals_to_time_intervals(frame_intervals)
 
-    def multi_tesseract(self, quit_event_for_analyzer_multiprocessing):
+    def multi_tesseract(self, frames_queue):
         while not frames_queue.empty():
-            if quit_event_for_analyzer_multiprocessing.is_set():
-                raise RequestedQuitException
-            
-            current_processing_info.cur_frame = current_processing_info.total_frame - frames_queue.qsize()
+            # current_processing_info.cur_frame = current_processing_info.total_frame - frames_queue.qsize()
+            if current_processing_info.quit_flag.value == 1:
+                break
 
             frame_count = frames_queue.get()
             img_path = f'{self.frames_dir}/frame_{frame_count}.jpg'
@@ -75,7 +74,7 @@ class VideoAnalyzer:
         print("CAPTURE_SAVE Start time:", start_time, flush=True)
         cap = cv2.VideoCapture(f'{video_path}.{ext}')
 
-        current_processing_info.total_frame = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+        current_processing_info.total_frame.value = cap.get(cv2.CAP_PROP_FRAME_COUNT)
         self.frame_rate = cap.get(cv2.CAP_PROP_FPS)
 
         if self.frame_rate < self.accuracy:
@@ -114,18 +113,16 @@ class VideoAnalyzer:
         start_time = datetime.datetime.now()
         print("AUG_SELECTION Start time:", start_time, flush=True)
 
-        quit_event_for_analyzer_multiprocessing = multiprocessing.Event()
-        current_processing_info.event = quit_event_for_analyzer_multiprocessing
-
         processes = []
         for _ in range(NUM_PROCESS):
-            process = multiprocessing.Process(target=self.multi_tesseract, args=(quit_event_for_analyzer_multiprocessing,))
+            process = multiprocessing.Process(target=self.multi_tesseract, args=(frames_queue,))
             process.start()
             processes.append(process)
         for process in processes:
             process.join()
 
-        if quit_event_for_analyzer_multiprocessing.is_set():
+        if current_processing_info.quit_flag.value == 1:
+            print("quit flag on")
             delete_local_directory(member_id, post_id)
             
         results = []
@@ -142,6 +139,8 @@ class VideoAnalyzer:
 
     def _is_aug_selection(self, img_path) -> bool:
         frame = cv2.imread(img_path)
+        if frame is None:
+            raise RequestedQuitException
 
         text = set(pytesseract.image_to_string(
             frame, lang='kor', config=self.custom_config))
@@ -155,7 +154,7 @@ class VideoAnalyzer:
         ret = []
         result_frames.append(sys.maxsize)
         depth = 0
-        aug_select_time_limit = 20  # 컷편집 한 영상. 풀영상은 이걸 더 높게. 영상업로드시 컷편집여부를 선택하도록 유도함
+        aug_select_time_limit = 20
         padding = 3 * self.skip_frame * self.accuracy
 
         aug_start = result_frames[0]
@@ -168,7 +167,7 @@ class VideoAnalyzer:
 
             if aug_select_time_limit * (self.skip_frame * self.accuracy) < cur - last:
                 if depth > self.accuracy * 3:
-                    ret.extend([max(0, aug_start - padding * 7), min(current_processing_info.total_frame, last + padding)])
+                    ret.extend([max(0, aug_start - padding * 7), min(current_processing_info.total_frame.value, last + padding)])
                 depth = 0
                 aug_start = cur
         return ret

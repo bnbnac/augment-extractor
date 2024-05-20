@@ -10,16 +10,16 @@ class Downloader:
         self.youtube_prefix = 'https://www.youtube.com/watch?v='
 
     def download(self, video_id, member_id, post_id):
-        current_processing_info.state = 'video downloading'
+        current_processing_info.state.value = 'video downloading'
 
         low_ext = self.download_low_qual(video_id, member_id, post_id)
-        if current_processing_info.quit_flag == 1:
-            delete_local_directory(member_id, current_processing_info.post_id)
+        if current_processing_info.quit_flag.value == 1:
+            delete_local_directory(member_id, current_processing_info.post_id.value)
             raise RequestedQuitException
 
         high_xet = self.download_high_qual(video_id, member_id, post_id)
-        if current_processing_info.quit_flag == 1:
-            delete_local_directory(member_id, current_processing_info.post_id)
+        if current_processing_info.quit_flag.value == 1:
+            delete_local_directory(member_id, current_processing_info.post_id.value)
             raise RequestedQuitException
 
         return low_ext, high_xet
@@ -61,6 +61,3 @@ class Downloader:
             ydl.download([url])
 
         return video_ext
-
-# # dot split -1
-# print(download_low_qual("https://www.youtube.com/watch?v=3lm-v1zP43c", "hihi4"))
