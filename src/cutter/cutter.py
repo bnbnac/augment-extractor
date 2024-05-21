@@ -4,14 +4,11 @@ from src.worker.shared import LOCAL_DIR, current_processing_info
 from src.exception.exception import RequestedQuitException
 from src.deleter.deleter import delete_local_directory
 
-# ['00:00:35', '00:00:47', '00:03:21', '00:03:30', '00:06:51', '00:06:51']
-# https://youtu.be/3lm-v1zP43c?si=dAx1RY6CQRSmWsY5
-
 
 def cut_video_segments(time_intervals: list[str], input_video_path, ext, member_id, post_id):
     current_processing_info.state = 'cutting'
     if current_processing_info.quit_flag == 1:
-        delete_local_directory(current_processing_info.post_id)
+        delete_local_directory(member_id, current_processing_info.post_id)
         raise RequestedQuitException
 
     complete = []
@@ -44,10 +41,3 @@ def cut_video_segments(time_intervals: list[str], input_video_path, ext, member_
             print(f"cut video failed: cut number #{i // 2 + 1}")
 
     return complete
-
-
-# timestamps = ['00:00:35', '00:00:47', '00:03:21',
-#               '00:03:30', '00:06:51', '00:06:52']
-# input_video_path = "/Users/hongseongjin/code/augment-extractor/downloads/high/hello.webm"
-
-# cut_video_segments(timestamps, input_video_path)

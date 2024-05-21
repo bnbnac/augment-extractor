@@ -29,7 +29,6 @@ class ProcessQueue(Queue):
 
         while not self.empty():
             temp_queue.put(self.get())
-    # 다른 데서 이 shared instance를 import 하는 방식을 잘 모르겠어서 일단 이렇게
         while not temp_queue.empty():
             self.put(temp_queue.get())
 
@@ -55,8 +54,8 @@ class CurProcess:
 
 process_queue = ProcessQueue()
 current_processing_info = CurProcess()
-frames_queue = multiprocessing.Queue()
-results_queue = multiprocessing.Queue()
+frames_queue = Queue()
+results_queue = Queue()
 
 def load_config(filename):
     with open(filename, 'r') as f:

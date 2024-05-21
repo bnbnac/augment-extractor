@@ -28,8 +28,8 @@ def get_position():
         initial_position, cur_position = process_queue.find_position(post_id)
         cur_post_id = current_processing_info.post_id
         state = current_processing_info.state
-        cur_frame = current_processing_info.cur_frame
         total_frame = current_processing_info.total_frame
+        cur_frame = current_processing_info.cur_frame
 
         return jsonify({
             "curPosition": cur_position,

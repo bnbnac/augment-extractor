@@ -44,7 +44,7 @@ def process_video(video_id, member_id, post_id):
     analyzer = VideoAnalyzer(tesseract_cmd=TESSERACT_CMD)
     try:
         video_path_low = f'{LOCAL_DIR}/downloads/{member_id}/{post_id}/low'
-        time_intervals = analyzer.get_time_interval_from_video(
+        time_intervals = analyzer.analyze(
             video_path_low, ext_low, member_id, post_id)
     except RequestedQuitException:
         print('quit requested', flush=True)
@@ -57,7 +57,7 @@ def process_video(video_id, member_id, post_id):
 
     start_time = datetime.datetime.now()
     print("CUT Start time:", start_time, flush=True)
-    
+
     # cut
     try:
         video_path_high = f'{LOCAL_DIR}/downloads/{member_id}/{post_id}/high'
@@ -102,7 +102,7 @@ def process_video(video_id, member_id, post_id):
 
 
 def delete_by_post_id(member_id, post_id):
-    if (current_processing_info.is_current_job(post_id)):
+    if current_processing_info.is_current_job(post_id):
         current_processing_info.quit_flag = 1
         return 'QUIT current job'
 
