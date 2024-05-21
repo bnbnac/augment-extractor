@@ -1,9 +1,10 @@
-import multiprocessing
+import threading
 import sys
 import datetime
 import cv2
 import os
 import pytesseract
+from queue import Queue
 from typing import List
 from src.worker.shared import current_processing_info, TESSERACT_CMD, NUM_PROCESS, LOCAL_DIR
 from src.worker.shared import frames_queue, results_queue
@@ -30,10 +31,10 @@ class VideoAnalyzer:
         self.skip_frame = None
 
     def analyze(self, video_path: str, ext: str, member_id: str, post_id: str) -> List[str]:
-        current_processing_info.state.value = 'on analysis'
+        current_processing_info.state = 'on analysis'
 
         frame_count = self.save_capture_frames(video_path, ext, member_id, post_id)
-        current_processing_info.total_frame.value = frame_count
+        current_processing_info.total_frame = frame_count
         
         try:
             frame_intervals = self.get_time_interval_from_video(member_id, post_id)
@@ -44,15 +45,13 @@ class VideoAnalyzer:
 
     def multi_tesseract(self, frames_queue):
         while not frames_queue.empty():
-            # current_processing_info.cur_frame = current_processing_info.total_frame - frames_queue.qsize()
-            if current_processing_info.quit_flag.value == 1:
+            if current_processing_info.quit_flag == 1:
                 break
 
             frame_count = frames_queue.get()
             img_path = f'{self.frames_dir}/frame_{frame_count}.jpg'
             if self._is_aug_selection(img_path=img_path):
                 results_queue.put(frame_count)
-
 
     def img_post_work(self, frame):
         height, width, _ = frame.shape
@@ -68,13 +67,12 @@ class VideoAnalyzer:
 
         return frame_binary
 
-
-    def save_capture_frames(self, video_path: str, ext: str, member_id: str, post_id: str) -> List[str]:
+    def save_capture_frames(self, video_path: str, ext: str, member_id: str, post_id: str) -> int:
         start_time = datetime.datetime.now()
         print("CAPTURE_SAVE Start time:", start_time, flush=True)
         cap = cv2.VideoCapture(f'{video_path}.{ext}')
 
-        current_processing_info.total_frame.value = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+        current_processing_info.total_frame = cap.get(cv2.CAP_PROP_FRAME_COUNT)
         self.frame_rate = cap.get(cv2.CAP_PROP_FPS)
 
         if self.frame_rate < self.accuracy:
@@ -107,21 +105,20 @@ class VideoAnalyzer:
         print("CAPTURE_SAVE End time:", end_time, flush=True)
 
         return frame_count
-    
 
     def get_time_interval_from_video(self, member_id: str, post_id: str) -> List[str]:
         start_time = datetime.datetime.now()
         print("AUG_SELECTION Start time:", start_time, flush=True)
 
-        processes = []
+        threads = []
         for _ in range(NUM_PROCESS):
-            process = multiprocessing.Process(target=self.multi_tesseract, args=(frames_queue,))
-            process.start()
-            processes.append(process)
-        for process in processes:
-            process.join()
+            thread = threading.Thread(target=self.multi_tesseract, args=(frames_queue,))
+            thread.start()
+            threads.append(thread)
+        for thread in threads:
+            thread.join()
 
-        if current_processing_info.quit_flag.value == 1:
+        if current_processing_info.quit_flag == 1:
             print("quit flag on")
             delete_local_directory(member_id, post_id)
             
@@ -131,8 +128,7 @@ class VideoAnalyzer:
 
         print(f"***************CAUGHT FRAMES{results}***************", flush=True)
         results.sort()
-        frame_intervals = self._generate_intervals(
-        results)
+        frame_intervals = self._generate_intervals(results)
         print(f"***************RETURN{frame_intervals}***************", flush=True)
 
         return frame_intervals
@@ -167,7 +163,7 @@ class VideoAnalyzer:
 
             if aug_select_time_limit * (self.skip_frame * self.accuracy) < cur - last:
                 if depth > self.accuracy * 3:
-                    ret.extend([max(0, aug_start - padding * 7), min(current_processing_info.total_frame.value, last + padding)])
+                    ret.extend([max(0, aug_start - padding * 7), min(current_processing_info.total_frame, last + padding)])
                 depth = 0
                 aug_start = cur
         return ret

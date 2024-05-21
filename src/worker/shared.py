@@ -33,31 +33,29 @@ class ProcessQueue(Queue):
             self.put(temp_queue.get())
 
 
-class CurProcess():
+class CurProcess:
     def __init__(self):
-        self.manager = multiprocessing.Manager()
-        self.queue = self.manager.Queue()
-        self.post_id = self.manager.Value('s', '')
-        self.state = self.manager.Value('s', 'standby')
-        self.cur_frame = self.manager.Value('i', 0)
-        self.total_frame = self.manager.Value('i', 0)
-        self.quit_flag = self.manager.Value('i', 0)
+        self.post_id = ''
+        self.state = 'standby'
+        self.cur_frame = 0
+        self.total_frame = 0
+        self.quit_flag = 0
 
     def is_current_job(self, post_id):
-        return self.post_id.value == post_id
+        return self.post_id == post_id
 
     def done(self):
-        self.post_id.value = ''
-        self.state.value = 'standby'
-        self.cur_frame.value = 0
-        self.total_frame.value = 0
-        self.quit_flag.value = 0
+        self.post_id = ''
+        self.state = 'standby'
+        self.cur_frame = 0
+        self.total_frame = 0
+        self.quit_flag = 0
 
 
 process_queue = ProcessQueue()
 current_processing_info = CurProcess()
-frames_queue = multiprocessing.Queue()
-results_queue = multiprocessing.Queue()
+frames_queue = Queue()
+results_queue = Queue()
 
 def load_config(filename):
     with open(filename, 'r') as f:
