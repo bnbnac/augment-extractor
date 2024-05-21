@@ -29,12 +29,13 @@ class VideoAnalyzer:
         self.frames_dir = None
         self.frame_rate = None
         self.skip_frame = None
+        self.total_frame = None
 
     def analyze(self, video_path: str, ext: str, member_id: str, post_id: str) -> List[str]:
         current_processing_info.state = 'on analysis'
 
-        frame_count = self.save_capture_frames(video_path, ext, member_id, post_id)
-        current_processing_info.total_frame = frame_count
+        self.save_capture_frames(video_path, ext, member_id, post_id)
+        current_processing_info.total_frame = frames_queue.qsize()
         
         try:
             frame_intervals = self.get_time_interval_from_video(member_id, post_id)
@@ -43,12 +44,14 @@ class VideoAnalyzer:
         
         return self._frame_intervals_to_time_intervals(frame_intervals)
 
-    def multi_tesseract(self, frames_queue):
+    def multi_tesseract(self):
         while not frames_queue.empty():
             if current_processing_info.quit_flag == 1:
                 break
 
             frame_count = frames_queue.get()
+            current_processing_info.cur_frame = current_processing_info.total_frame - frames_queue.qsize()
+
             img_path = f'{self.frames_dir}/frame_{frame_count}.jpg'
             if self._is_aug_selection(img_path=img_path):
                 results_queue.put(frame_count)
@@ -72,7 +75,7 @@ class VideoAnalyzer:
         print("CAPTURE_SAVE Start time:", start_time, flush=True)
         cap = cv2.VideoCapture(f'{video_path}.{ext}')
 
-        current_processing_info.total_frame = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+        self.total_frame = cap.get(cv2.CAP_PROP_FRAME_COUNT)
         self.frame_rate = cap.get(cv2.CAP_PROP_FPS)
 
         if self.frame_rate < self.accuracy:
@@ -104,15 +107,13 @@ class VideoAnalyzer:
         end_time = datetime.datetime.now()
         print("CAPTURE_SAVE End time:", end_time, flush=True)
 
-        return frame_count
-
     def get_time_interval_from_video(self, member_id: str, post_id: str) -> List[str]:
         start_time = datetime.datetime.now()
         print("AUG_SELECTION Start time:", start_time, flush=True)
 
         threads = []
         for _ in range(NUM_PROCESS):
-            thread = threading.Thread(target=self.multi_tesseract, args=(frames_queue,))
+            thread = threading.Thread(target=self.multi_tesseract)
             thread.start()
             threads.append(thread)
         for thread in threads:
@@ -163,7 +164,7 @@ class VideoAnalyzer:
 
             if aug_select_time_limit * (self.skip_frame * self.accuracy) < cur - last:
                 if depth > self.accuracy * 3:
-                    ret.extend([max(0, aug_start - padding * 7), min(current_processing_info.total_frame, last + padding)])
+                    ret.extend([max(0, aug_start - padding * 7), min(self.total_frame, last + padding)])
                 depth = 0
                 aug_start = cur
         return ret
