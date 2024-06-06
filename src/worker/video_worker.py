@@ -1,6 +1,6 @@
 import time
 import datetime
-from src.worker.shared import process_queue, current_processing_info, LOCAL_DIR, TESSERACT_CMD, SPRING_SERVER
+from src.worker.shared import frames_queue, process_queue, current_processing_info, LOCAL_DIR, TESSERACT_CMD, SPRING_SERVER
 from src.downloader.downloader import Downloader
 from src.analyzer.analyzer import VideoAnalyzer
 from src.cutter import cutter
@@ -18,6 +18,7 @@ def process_video_task():
             current_processing_info.post_id = post_id
             process_video(video_id, member_id, post_id)
             current_processing_info.done()
+            frames_queue.queue.clear()
 
 # 이 함수는 크게 [다운로드, 분석, 컷, 작업물전송, 응답] 으로 나뉨
 def process_video(video_id, member_id, post_id):

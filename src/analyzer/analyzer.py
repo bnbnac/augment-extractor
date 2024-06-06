@@ -14,7 +14,7 @@ from src.deleter.deleter import delete_local_directory
 
 class VideoAnalyzer:
     def __init__(self, tesseract_cmd: str = TESSERACT_CMD,
-                 custom_config: str = r'--psm 6',
+                 custom_config: str = r'--psm 6 --dpi 100',
                  relative_x: float = 0.33, relative_y: float = 0.1,
                  relative_w: float = 0.33, relative_h: float = 0.3,
                  threshold_val: int = 130, accuracy: float = 2.0):
@@ -41,6 +41,8 @@ class VideoAnalyzer:
             frame_intervals = self.get_time_interval_from_video(member_id, post_id)
         except RequestedQuitException as e:
             raise e
+        except Exception as e:
+            print(f"An error occurred: {e}")
         
         return self._frame_intervals_to_time_intervals(frame_intervals)
 
@@ -53,8 +55,11 @@ class VideoAnalyzer:
             current_processing_info.cur_frame = current_processing_info.total_frame - frames_queue.qsize()
 
             img_path = f'{self.frames_dir}/frame_{frame_count}.jpg'
-            if self._is_aug_selection(img_path=img_path):
-                results_queue.put(frame_count)
+            try:
+                if self._is_aug_selection(img_path=img_path):
+                    results_queue.put(frame_count)
+            except Exception as e:
+                print(f"Error processing frame {frame_count}: {e}")
 
     def img_post_work(self, frame):
         height, width, _ = frame.shape
@@ -122,6 +127,7 @@ class VideoAnalyzer:
         if current_processing_info.quit_flag == 1:
             print("quit flag on")
             delete_local_directory(member_id, post_id)
+            raise RequestedQuitException 
             
         results = []
         while not results_queue.empty():
@@ -137,7 +143,7 @@ class VideoAnalyzer:
     def _is_aug_selection(self, img_path) -> bool:
         frame = cv2.imread(img_path)
         if frame is None:
-            raise RequestedQuitException
+            print(f"frame is none: {img_path}")
 
         text = set(pytesseract.image_to_string(
             frame, lang='kor', config=self.custom_config))
