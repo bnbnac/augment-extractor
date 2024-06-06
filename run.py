@@ -17,4 +17,4 @@ if __name__ == '__main__':
     else:
         port = 5050
         
-    app.run(host=EXTRACTOR_SERVER, port=port, debug=True, use_reloader=False)
+    app.run(host='0.0.0.0', port=port, debug=True, use_reloader=False)
